@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="192cm의 개인 포트폴리오. 프로젝트, 작업 방식, 연락처를 담은 GitHub Pages 사이트입니다."
+    />
+    <meta property="og:title" content="192cm Portfolio" />
+    <meta
+      property="og:description"
+      content="차분한 클라우드 톤과 블루 포인트로 정리한 개인 포트폴리오입니다."
+    />
+    <meta property="og:type" content="website" />
+    <title>192cm Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="192cm portfolio home">192cm</a>
+      <nav class="nav" aria-label="Primary navigation">
+        <a href="#work">Work</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero section">
+        <div class="hero-copy">
+          <p class="eyebrow">Portfolio / GitHub Pages</p>
+          <h1>담백하게 만들고,<br />분명하게 전달합니다.</h1>
+          <p class="hero-description">
+            문제를 구조화하고 실행 가능한 결과물로 옮기는 작업을 좋아합니다.
+            이곳에는 프로젝트, 실험, 기록을 차분하게 정리합니다.
+          </p>
+          <div class="hero-actions" aria-label="Portfolio actions">
+            <a class="button primary" href="#work">프로젝트 보기</a>
+            <a class="button secondary" href="https://github.com/192cm">GitHub</a>
+          </div>
+        </div>
+
+        <aside class="signal-panel" aria-label="Portfolio summary">
+          <div class="panel-cloud">
+            <span>Canvas Cloud</span>
+            <strong>#EDF1F5</strong>
+          </div>
+          <div class="panel-blue">
+            <span>Electric Blue</span>
+            <strong>#0145F2</strong>
+          </div>
+          <dl class="quick-facts">
+            <div>
+              <dt>Focus</dt>
+              <dd>Product · Web · Data</dd>
+            </div>
+            <div>
+              <dt>Base</dt>
+              <dd>Seoul, Korea</dd>
+            </div>
+          </dl>
+        </aside>
+      </section>
+
+      <section class="section intro" aria-labelledby="intro-title">
+        <div>
+          <p class="section-label">Direction</p>
+          <h2 id="intro-title">군더더기 없이, 읽히는 포트폴리오.</h2>
+        </div>
+        <p>
+          강한 장식보다 정보의 질서에 집중했습니다. 한글 자간을 살짝 좁히고,
+          얇은 선과 제한된 포인트 컬러만 사용해 작업물이 먼저 보이도록 구성했습니다.
+        </p>
+      </section>
+
+      <section class="section work" id="work" aria-labelledby="work-title">
+        <div class="section-heading">
+          <p class="section-label">Selected Work</p>
+          <h2 id="work-title">최근 작업</h2>
+        </div>
+        <div class="work-grid">
+          <article class="work-card featured">
+            <div class="card-meta">
+              <span>01</span>
+              <span>Web Portfolio</span>
+            </div>
+            <h3>개인 GitHub Pages 구축</h3>
+            <p>
+              정적 페이지 기반으로 빠르게 배포할 수 있는 포트폴리오 구조를 설계하고,
+              소개·작업·연락 흐름을 한 페이지 안에 정리했습니다.
+            </p>
+            <a href="https://github.com/192cm/192cm.github.io">Repository</a>
+          </article>
+
+          <article class="work-card">
+            <div class="card-meta">
+              <span>02</span>
+              <span>Product Thinking</span>
+            </div>
+            <h3>문제 정의와 실행 계획</h3>
+            <p>
+              복잡한 요구사항을 우선순위, 사용자 흐름, 검증 가능한 작업 단위로
+              나누는 방식에 관심이 있습니다.
+            </p>
+          </article>
+
+          <article class="work-card">
+            <div class="card-meta">
+              <span>03</span>
+              <span>Archive</span>
+            </div>
+            <h3>학습과 실험 기록</h3>
+            <p>
+              작은 실험도 다시 꺼내 볼 수 있도록 의도, 과정, 결과를 간결하게
+              남기는 아카이브를 만들어갑니다.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section about" id="about" aria-labelledby="about-title">
+        <div class="section-heading">
+          <p class="section-label">About</p>
+          <h2 id="about-title">일하는 방식</h2>
+        </div>
+        <div class="about-list">
+          <article>
+            <span>01</span>
+            <h3>구조를 먼저 봅니다</h3>
+            <p>무엇을 만들지보다 왜 필요한지, 어떤 순서로 검증할지를 먼저 정리합니다.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>작게 만들고 빠르게 다듬습니다</h3>
+            <p>완성도를 추상적으로 말하기보다 실제 화면과 동작으로 판단합니다.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>읽히는 결과물을 선호합니다</h3>
+            <p>디자인, 코드, 문서 모두 다음 사람이 이해하기 쉬운 상태를 목표로 합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section contact" id="contact" aria-labelledby="contact-title">
+        <p class="section-label">Contact</p>
+        <h2 id="contact-title">같이 이야기할 일이 있다면</h2>
+        <p>
+          프로젝트 제안, 협업, 피드백 모두 환영합니다. GitHub에서 작업 흐름과
+          업데이트를 확인할 수 있습니다.
+        </p>
+        <a class="button primary" href="https://github.com/192cm">github.com/192cm</a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>© <span id="year"></span> 192cm</span>
+      <a href="#top">Back to top</a>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
