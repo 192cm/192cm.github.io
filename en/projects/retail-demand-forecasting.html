@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Full report for a retail inventory and demand forecasting project using Temporal Fusion Transformer."
+    />
+    <title>Retail Store Inventory and Demand Forecasting | Kunho</title>
+    <link rel="stylesheet" href="../../styles.css?v=20260530-lang" />
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector">
+          <a href="../../projects/retail-demand-forecasting.html" hreflang="ko">KO</a>
+          <span class="active" aria-current="page">EN</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="report-article">
+        <header class="report-hero">
+          <p class="report-kicker">Project Report</p>
+          <h1>Retail Store Inventory and Demand Forecasting</h1>
+
+          <dl class="report-meta">
+            <div><dt>Published</dt><dd>2026. 2. 10.</dd></div>
+            <div><dt>Task</dt><dd>Multi-Horizon Time-Series Regression</dd></div>
+            <div><dt>Model</dt><dd>Temporal Fusion Transformer</dd></div>
+            <div><dt>Metrics</dt><dd>MAPE, RMSE, Quantile Forecast</dd></div>
+          </dl>
+        </header>
+
+        <div class="report-body">
+          <aside class="report-toc" aria-label="Report table of contents">
+            <strong>Contents</strong>
+            <a href="#overview">1. Project Overview</a>
+            <a href="#data">2. Data Overview</a>
+            <a href="#eda">3. EDA</a>
+            <a href="#preprocessing">4. Data Preprocessing</a>
+            <a href="#modeling">5. Modeling and Optimization</a>
+            <a href="#results">6. Results and Analysis</a>
+            <a href="#conclusion">7. Conclusion</a>
+            <a href="#appendix">8. Appendix</a>
+          </aside>
+
+          <div class="report-content">
+            <section class="report-section" id="overview">
+              <h2>1. Project Overview</h2>
+              <h3>1.1. Problem Definition and Goal</h3>
+              <p>
+                This project aims to predict retail-store product demand and connect the
+                prediction results to inventory-management decisions. Demand forecasting
+                is a multi-horizon time-series regression problem because future demand
+                must be predicted across several days rather than only at one point in
+                time. Accurate forecasts can reduce stockouts and excessive inventory,
+                improving both sales opportunity and operating efficiency.
+              </p>
+              <h3>1.2. Evaluation Metrics</h3>
+              <p>
+                The project uses MAPE and RMSE as core metrics. MAPE measures relative
+                error and is intuitive for business interpretation, while RMSE penalizes
+                large forecast errors more strongly. Quantile forecasts are also used
+                because demand uncertainty matters for safety-stock decisions. The target
+                was to improve meaningfully over a baseline and approach a MAPE of around
+                10%.
+              </p>
+            </section>
+
+            <section class="report-section" id="data">
+              <h2>2. Data Overview</h2>
+              <h3>2.1. Data Source and Structure</h3>
+              <p>
+                The dataset contains retail-store inventory and demand records. Each row
+                includes a date, store, product, category, region, inventory level, units
+                sold, units ordered, price, discount, weather condition, promotion
+                status, competitor pricing, seasonality, epidemic status, and demand.
+              </p>
+              <p>
+                The data has the form of a panel time series because demand is observed
+                repeatedly across multiple store-product combinations. Therefore, the
+                model must learn both time-dependent patterns and static differences
+                between products and stores.
+              </p>
+              <p>The variables were defined in detail according to the TFT input structure.</p>
+              <ul class="report-label-list">
+                <li><strong>Static Covariates:</strong> properties that do not change over time, including store ID, product ID, category, and region.</li>
+                <li><strong>Time-varying Known Inputs:</strong> information known in advance for future time points, including date, day of week, weekend flag, seasonality, and promotion plans.</li>
+                <li><strong>Time-varying Unknown Inputs:</strong> information known only up to the past, including actual demand, inventory level, sales volume, competitor price, weather, and epidemic status.</li>
+              </ul>
+
+              <h3>2.2. Feature Description</h3>
+              <p>The features in the data are as follows.</p>
+              <ul class="report-label-list">
+                <li><strong>Date:</strong> the date the data was recorded.</li>
+                <li><strong>Store ID:</strong> unique identifier for each store.</li>
+                <li><strong>Product ID:</strong> unique identifier for each product.</li>
+                <li><strong>Category:</strong> product category, such as electronics or clothing.</li>
+                <li><strong>Region:</strong> geographical region where the store is located.</li>
+                <li><strong>Inventory Level:</strong> quantity currently remaining in the warehouse or store.</li>
+                <li><strong>Units Sold:</strong> number of products actually sold on that date.</li>
+                <li><strong>Units Ordered:</strong> quantity ordered for replenishment.</li>
+                <li><strong>Price:</strong> selling price of the product.</li>
+                <li><strong>Discount:</strong> applied discount rate or amount.</li>
+                <li><strong>Weather Condition:</strong> weather on the recorded date, such as sunny or rainy.</li>
+                <li><strong>Promotion:</strong> whether a promotion was active.</li>
+                <li><strong>Competitor Pricing:</strong> price of similar products from competitors.</li>
+                <li><strong>Seasonality:</strong> season corresponding to the date.</li>
+                <li><strong>Epidemic:</strong> whether an epidemic was present.</li>
+                <li><strong>Demand:</strong> estimated daily demand for the product.</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="eda">
+              <h2>3. EDA</h2>
+              <h3>3.1. Checking Data Distributions</h3>
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image02.png" alt="Daily total demand time-series trend" loading="lazy" /><figcaption>Daily Total Demand</figcaption></figure>
+              <p>
+                The time-series trend of daily total demand shows clear seasonality and
+                cyclicality rather than random distribution. The decisive feature is that
+                demand repeatedly increases and decreases over time. This confirms that
+                the task should be approached as a time-series forecasting problem rather
+                than a simple independent regression problem.
+              </p>
+              <p>
+                Because demand changes according to temporal conditions, the model needs
+                date-derived features such as day of week, weekend flag, and season.
+              </p>
+
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image03.png" alt="Demand distribution by categorical features" loading="lazy" /><figcaption>Categorical Features</figcaption></figure>
+              <p>
+                Demand distribution by categorical feature shows that product category
+                and weather condition strongly affect individual product demand. Some
+                categories have consistently high demand, while others show lower and more
+                volatile demand. This supports the use of category and product identifiers
+                as static covariates.
+              </p>
+              <p>
+                Weather and seasonality also affect demand differences, indicating that
+                external conditions should be included as known or observed time-varying
+                inputs.
+              </p>
+
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image04.png" alt="Numerical feature distributions" loading="lazy" /><figcaption>Numerical Features</figcaption></figure>
+              <p>
+                Demand and inventory-related variables show strong asymmetry. Inventory
+                Level and Units Ordered have typical right-skewed distributions. This
+                suggests that certain products or stores experience exceptionally high
+                replenishment or stock levels.
+              </p>
+
+              <h3>3.2. Correlation and Insights</h3>
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image05.png" alt="Correlation heatmap between variables" loading="lazy" /><figcaption>Correlation Between Variables</figcaption></figure>
+              <p>
+                The first point to note is multicollinearity. The correlation coefficient
+                between Price and Competitor Pricing is 0.98, meaning the two variables
+                contain nearly identical information. If both are used without adjustment,
+                the model may become unstable or overemphasize price-related effects.
+              </p>
+              <p>
+                Demand is related to Units Sold and Inventory Level, which is natural
+                because these variables directly interact in retail operations. However,
+                care must be taken to prevent future leakage when using variables that
+                are unknown at prediction time.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image06.png" alt="Demand by seasonality and weather condition" loading="lazy" /><figcaption>Seasonality and Weather Conditions</figcaption></figure>
+              <p>
+                Overall, average demand is highest in summer, and demand tends to be
+                maximized under sunny conditions in every season. In particular, the
+                difference between sunny days and other weather conditions is large,
+                showing that weather conditions have meaningful explanatory power.
+              </p>
+            </section>
+
+            <section class="report-section" id="preprocessing">
+              <h2>4. Data Preprocessing</h2>
+              <h3>4.1. Feature Engineering</h3>
+              <p>
+                Time-related features were generated from the date column, including day
+                of week, month, weekend flag, and season-related information. These
+                features help the model learn recurring demand patterns and make
+                multi-horizon prediction possible.
+              </p>
+              <h3>4.2. Preprocessing Strategy and Key Techniques</h3>
+              <p>
+                The dataset was reorganized into a sequence format appropriate for TFT.
+                Static variables, known future variables, and unknown historical
+                variables were separated so the model could use information in a way that
+                matches actual forecasting conditions.
+              </p>
+              <p>
+                Numerical variables were scaled, categorical variables were encoded, and
+                time indices were created for each store-product series. Missing or
+                inconsistent records were handled before training to reduce instability.
+              </p>
+            </section>
+
+            <section class="report-section" id="modeling">
+              <h2>5. Modeling and Optimization</h2>
+              <h3>5.1. Model Selection</h3>
+              <p>
+                The Temporal Fusion Transformer was selected because it supports
+                multi-horizon forecasting and can use static covariates, known future
+                variables, and observed historical variables together. Its attention
+                mechanism also provides interpretability through variable importance.
+              </p>
+
+              <h3>5.2. Hyperparameter Tuning</h3>
+              <p>
+                Optuna was used for hyperparameter tuning. The search space included
+                hidden size, dropout, hidden continuous size, attention head size, and
+                learning rate. Garbage collection and CUDA cache cleanup were performed
+                inside the objective function to reduce memory pressure during repeated
+                experiments.
+              </p>
+              <pre class="report-code"><code>def objective(trial):
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    hidden_size = trial.suggest_categorical("hidden_size", [16, 32, 64])
+    dropout = trial.suggest_float("dropout", 0.1, 0.4)
+    hidden_continuous_size = trial.suggest_categorical("hidden_continuous_size", [8, 16, 32])
+    attention_head_size = trial.suggest_categorical("attention_head_size", [1, 2, 4])
+    learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
+
+    # build, train, validate the TFT model
+    return val_loss
+
+study.optimize(objective, n_trials=20)</code></pre>
+
+              <h3>5.3 Tuning Results and Best Parameters</h3>
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image07.png" alt="Optuna TFT tuning result" loading="lazy" /><figcaption>Optuna tuning result</figcaption></figure>
+              <ul class="report-label-list">
+                <li><strong>Best trial:</strong> trial 7, value 3.6446170806884766</li>
+                <li><strong>Hidden Size:</strong> 64</li>
+                <li><strong>Learning Rate:</strong> 0.008040444263766957</li>
+                <li><strong>Dropout:</strong> 0.2433929223767682</li>
+                <li><strong>Attention Heads:</strong> 2</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="results">
+              <h2>6. Results and Analysis</h2>
+              <h3>6.1. Final Performance Evaluation</h3>
+              <ul class="report-label-list">
+                <li><strong>MAPE:</strong> My Model 10.15%, Baseline 54.79%. Although it narrowly missed the target of below 10%, it improved greatly over the baseline.</li>
+                <li><strong>RMSE:</strong> My Model 9.14, Baseline 61.06. This is an 85.03% improvement over the baseline and sufficiently meets the goal of more than 15% improvement.</li>
+              </ul>
+              <p>
+                The final model substantially reduced prediction error compared with the
+                baseline. This confirms that using a sequence model with structured
+                covariates is effective for retail demand forecasting.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image08.png" alt="Test dataset prediction results" loading="lazy" /><figcaption>Test Dataset Evaluation</figcaption></figure>
+
+              <h3>6.2. Feature Importance</h3>
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image09.png" alt="Static variable importance" loading="lazy" /><figcaption>Static Variables Importance</figcaption></figure>
+              <p>
+                Static variable analysis shows that Product ID has the highest importance
+                at about 35%. This means each product has a unique sales pattern, and the
+                model relies heavily on product identity when forecasting demand.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image10.png" alt="Encoder variable importance" loading="lazy" /><figcaption>Encoder Variables Importance</figcaption></figure>
+              <p>
+                In the encoder-variable analysis, Competitor Pricing and Price together
+                account for about 50% of importance. This indicates that the model uses
+                price-related signals strongly when interpreting past demand patterns.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/retail-demand-forecasting/image11.png" alt="Decoder variable importance" loading="lazy" /><figcaption>Decoder Variables Importance</figcaption></figure>
+            </section>
+
+            <section class="report-section" id="conclusion">
+              <h2>7. Conclusion</h2>
+              <h3>7.1. Business Impact</h3>
+              <p>
+                The model can support practical inventory decisions by forecasting demand
+                more accurately than the baseline. Lower forecast error can reduce
+                stockouts, avoid excessive ordering, and improve replenishment timing.
+                Product-level and price-related importance also provides business insight
+                into which factors should be monitored closely.
+              </p>
+              <h3>7.2. Limitations and Future Work</h3>
+              <p>
+                The model still narrowly misses the MAPE target of below 10%, and the
+                dataset has limitations because some external factors are simplified.
+                Future work includes adding richer holiday and regional event data,
+                improving leakage control, testing additional forecasting architectures,
+                and connecting forecasts directly to safety-stock optimization.
+              </p>
+            </section>
+
+            <section class="report-section" id="appendix">
+              <h2>8. Appendix</h2>
+              <ul class="report-label-list">
+                <li><strong>Code:</strong> <a href="https://github.com/192cm/Retail-Store-Inventory-and-Demand-Forecasting.git">https://github.com/192cm/Retail-Store-Inventory-and-Demand-Forecasting.git</a></li>
+                <li><strong>Data:</strong> <a href="https://www.kaggle.com/datasets/atomicd/retail-store-inventory-and-demand-forecasting">Retail Store Inventory and Demand Forecasting Dataset</a></li>
+              </ul>
+            </section>
+
+            <div class="report-links">
+              <a class="button primary" href="https://github.com/192cm/Retail-Store-Inventory-and-Demand-Forecasting.git">Repository</a>
+              <a class="button secondary" href="index.html">Back to projects</a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

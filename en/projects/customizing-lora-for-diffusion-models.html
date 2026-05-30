@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A full project report on diffusion model style adaptation using LoRA, Stable Diffusion, Diffusers, and PEFT."
+    />
+    <title>Customizing LoRA for Diffusion Models | Kunho</title>
+    <link rel="stylesheet" href="../../styles.css?v=20260530-lang" />
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector">
+          <a href="../../projects/customizing-lora-for-diffusion-models.html" hreflang="ko">KO</a>
+          <span class="active" aria-current="page">EN</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="report-article">
+        <header class="report-hero">
+          <p class="report-kicker">Project Report</p>
+          <h1>Diffusion Model Style Adaptation Using Customizing LoRA</h1>
+
+          <dl class="report-meta">
+            <div><dt>Name</dt><dd>Kunho Jang</dd></div>
+            <div><dt>Department</dt><dd>School of Computer Science and Engineering</dd></div>
+            <div><dt>Student ID</dt><dd>202255597</dd></div>
+            <div><dt>Keywords</dt><dd>LoRA, Diffusion Model, Stable Diffusion, Fine-tuning</dd></div>
+          </dl>
+
+          <section class="report-summary" aria-labelledby="summary-title">
+            <h2 id="summary-title">Summary</h2>
+            <p>
+              This project builds a complete pipeline for adapting Stable Diffusion to a
+              custom visual style with LoRA. Three datasets were prepared: web-crawled
+              images, generated images, and real photographs. Each dataset was captioned,
+              converted into the Hugging Face imagefolder format, trained with LoRA, and
+              evaluated through before/after generation and ablation studies on rank and
+              alpha.
+            </p>
+          </section>
+        </header>
+
+        <div class="report-body">
+          <aside class="report-toc" aria-label="Report table of contents">
+            <strong>Contents</strong>
+            <a href="#introduction">1. Introduction</a>
+            <a href="#task">2. Task Formulation</a>
+            <a href="#dataset">3. Dataset</a>
+            <a href="#model">4. Model</a>
+            <a href="#results">5. Experiments and Results</a>
+            <a href="#papers">6. Paper Summary</a>
+            <a href="#conclusion">7. Conclusion and Future Work</a>
+            <a href="#structure">8. Project File Structure</a>
+            <a href="#references">References</a>
+          </aside>
+
+          <div class="report-content">
+            <section class="report-section" id="introduction">
+              <h2>1. Introduction</h2>
+              <p>
+                Recent generative AI systems can create high-quality images from text
+                prompts, and diffusion models such as Stable Diffusion are widely used as
+                representative text-to-image models. However, a base diffusion model has
+                limited ability to reflect a user's desired visual style or domain
+                without additional adaptation.
+              </p>
+              <p>
+                Full fine-tuning of a diffusion model requires a large amount of
+                computation and storage because all model parameters must be updated.
+                LoRA reduces this burden by adding small low-rank matrices to specific
+                layers and training only those additional parameters. This makes it
+                possible to customize model behavior even in a limited experimental
+                environment.
+              </p>
+              <p>
+                This project applies LoRA to Stable Diffusion v1.5 and compares whether
+                different custom datasets can transfer their visual characteristics to the
+                generated images. The work also studies how LoRA rank and alpha affect
+                the degree of style reflection and generation quality.
+              </p>
+            </section>
+
+            <section class="report-section" id="task">
+              <h2>2. Task Formulation</h2>
+              <h3>2.1 Overall Pipeline Structure</h3>
+              <ul class="report-label-list">
+                <li><strong>Dataset Collection:</strong> builds custom datasets from web-crawled images, generated images, and real photographs.</li>
+                <li><strong>Image Captioning:</strong> uses a BLIP-based captioning model to automatically create text descriptions for each image and organize them as caption metadata.</li>
+                <li><strong>Dataset Formatting:</strong> organizes images and captions in the Hugging Face <code>imagefolder</code> format and builds <code>metadata.csv</code>.</li>
+                <li><strong>LoRA Training:</strong> applies LoRA adapters to the UNet attention layers of Stable Diffusion v1.5 to learn visual characteristics for each dataset.</li>
+                <li><strong>Image Generation:</strong> applies trained LoRA weights to the base Stable Diffusion pipeline and generates prompt-based images.</li>
+                <li><strong>Evaluation &amp; Ablation Study:</strong> compares results before and after LoRA and analyzes generated outputs and style reflection under changes in rank and alpha.</li>
+              </ul>
+
+              <figure class="report-figure">
+                <img src="../../projects/assets/customizing-lora-for-diffusion-models/image16.png" alt="Overall LoRA style adaptation pipeline" loading="lazy" />
+                <figcaption>Figure 1. Overall Pipeline</figcaption>
+              </figure>
+
+              <h3>2.2 Dataset Construction Method</h3>
+              <p>
+                The dataset was intentionally divided into three types so that the
+                difference between artificial styles and real-photo styles could be
+                examined. This design allows the experiment to compare whether LoRA
+                mainly learns texture, color, object structure, or photographic lighting
+                depending on the dataset source.
+              </p>
+              <ul class="report-label-list">
+                <li><strong>Dataset A - Web Crawled Images:</strong> pixel-art style images collected from the web, used to check how much web-image-based style characteristics can be reflected.</li>
+                <li><strong>Dataset B - Generated Images:</strong> images intended to have a paper-craft or paper-cutout style, including houses, flower gardens, animals, and landscapes.</li>
+                <li><strong>Dataset C - Real Images:</strong> real images containing snowy streets, buildings, outdoor landscapes, texture, and lighting conditions.</li>
+              </ul>
+
+              <h3>2.3 Captioning and Metadata Construction</h3>
+              <p>
+                Each image was paired with a text caption so the model could associate
+                visual features with language conditions during training. BLIP was used
+                to generate captions automatically, and the results were checked and
+                organized into metadata.
+              </p>
+              <figure class="report-figure">
+                <img src="../../projects/assets/customizing-lora-for-diffusion-models/image15.png" alt="BLIP captioning metadata generation example" loading="lazy" />
+                <figcaption>Figure 2. Captioning Example</figcaption>
+              </figure>
+            </section>
+
+            <section class="report-section" id="dataset">
+              <h2>3. Dataset</h2>
+              <h3>3.1 Dataset Composition</h3>
+              <p>
+                The dataset was designed to compare three style adaptation scenarios:
+                web-collected stylized images, generated stylized images, and real-world
+                photographs. The number of samples and content type differ by dataset,
+                but all were converted into the same training format for fair comparison.
+              </p>
+              <figure class="report-figure">
+                <img src="../../projects/assets/customizing-lora-for-diffusion-models/image18.png" alt="LoRA training dataset configuration table" loading="lazy" />
+                <figcaption>Table 1. Data Configuration</figcaption>
+              </figure>
+
+              <h3>3.2 Data Preprocessing</h3>
+              <p>
+                Images were collected, resized, and organized into folders by dataset.
+                Captions were stored in <code>metadata.csv</code> so that the Hugging Face
+                <code>imagefolder</code> loader could read image-caption pairs. This
+                preprocessing step makes the training notebooks reusable across different
+                datasets.
+              </p>
+              <p>
+                Since LoRA training is sensitive to dataset quality, duplicated,
+                low-quality, or style-inconsistent images were removed as much as
+                possible. The metadata format also made it easier to inspect whether each
+                caption described the image content with enough detail.
+              </p>
+
+              <h3>3.3 Data Visualization</h3>
+              <p>
+                Dataset samples were visualized before training to verify whether each
+                dataset contained the intended visual distribution. This step was
+                important because style adaptation quality depends strongly on the
+                consistency of the training images.
+              </p>
+              <figure class="report-figure">
+                <img src="../../projects/assets/customizing-lora-for-diffusion-models/image13.png" alt="Samples from the three custom datasets" loading="lazy" />
+                <figcaption>Figure 3. Dataset Samples</figcaption>
+              </figure>
+            </section>
+
+            <section class="report-section" id="model">
+              <h2>4. Model Selection</h2>
+              <h3>4.1 Stable Diffusion</h3>
+              <p>
+                Stable Diffusion is a latent diffusion model that performs denoising in
+                latent space instead of pixel space. This reduces computation while still
+                producing high-resolution images. The model consists of a text encoder,
+                UNet denoiser, and VAE decoder, and the UNet attention layers are a
+                natural target for LoRA adaptation.
+              </p>
+              <p>
+                Stable Diffusion v1.5 was selected because it is widely supported by
+                open-source tooling and has a stable implementation in Diffusers. This
+                made it suitable for comparing different LoRA training conditions.
+              </p>
+
+              <h3>4.2 LoRA (Low-Rank Adaptation)</h3>
+              <p>
+                LoRA assumes that the parameter updates needed for adaptation can be
+                represented in a low-rank form. Instead of updating the original weight
+                matrix directly, LoRA trains small matrices that are added to the model's
+                existing layers. This greatly reduces the number of trainable parameters.
+              </p>
+              <p>
+                In this project, LoRA adapters were applied to the attention layers of the
+                Stable Diffusion UNet. Rank determines the size of the representation
+                space the adapter can learn, while alpha controls the strength of the
+                adapter's influence on the base model.
+              </p>
+
+              <h3>4.3 Hugging Face Diffusers &amp; PEFT</h3>
+              <p>
+                Diffusers was used to construct the Stable Diffusion training and
+                inference pipeline, while PEFT was used to manage parameter-efficient
+                fine-tuning. These libraries made it possible to train, save, load, and
+                compare LoRA adapters in a consistent workflow.
+              </p>
+            </section>
+
+            <section class="report-section" id="results">
+              <h2>5. Experimental Environment and Results</h2>
+              <h3>5.1 Experimental Environment</h3>
+              <p>
+                Training and inference were performed in a notebook-based environment.
+                The experimental settings included the Stable Diffusion checkpoint, LoRA
+                rank and alpha values, learning rate, training steps, and prompts for
+                before/after comparison.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/customizing-lora-for-diffusion-models/image12.png" alt="LoRA training and image generation experiment setup" loading="lazy" /><figcaption>Table 2. Experiment Setup</figcaption></figure>
+
+              <h3>5.2 Before/After LoRA Comparison</h3>
+              <p>
+                The before/after comparison checks whether the LoRA adapter changes the
+                visual output in the intended direction while preserving prompt
+                controllability.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/customizing-lora-for-diffusion-models/image17.png" alt="Before and after comparison for the web-crawled image dataset" loading="lazy" /><figcaption>Figure 4. Web Crawled Image Before/After Results</figcaption></figure>
+              <p>
+                For the Web Crawled dataset, after applying LoRA, the building exterior
+                texture and color became closer to the training images. The result shows
+                that the adapter learned the coarse texture and stylized appearance of
+                the collected images.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/customizing-lora-for-diffusion-models/image19.png" alt="Before and after comparison for the generated image dataset" loading="lazy" /><figcaption>Figure 5. Generated Image Before/After Results</figcaption></figure>
+              <p>
+                For the Generated dataset, the training data intended a paper-craft or
+                paper-cutout style. After applying LoRA, paper-like edges, layered
+                shapes, and a more handcrafted visual impression appeared more clearly.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/customizing-lora-for-diffusion-models/image14.png" alt="Before and after comparison for the real image dataset" loading="lazy" /><figcaption>Figure 6. Real Image Before/After Results</figcaption></figure>
+              <p>
+                For the Real dataset, after applying LoRA, brown and reddish building
+                exterior tones and realistic snowy street textures became stronger than
+                before. However, real-image adaptation was more subtle than stylized
+                dataset adaptation because the target style was less explicit.
+              </p>
+              <p>
+                Overall, LoRA did not simply copy training images; it adjusted the base
+                model's output distribution toward the visual tendencies of each dataset.
+              </p>
+
+              <h3>5.3 Ablation Study</h3>
+              <p>
+                Ablation experiments were conducted to examine how rank and alpha affect
+                the expressive capacity and strength of LoRA adaptation.
+              </p>
+              <h3>5.3.1 Rank Ablation</h3>
+              <figure class="report-figure"><img src="../../projects/assets/customizing-lora-for-diffusion-models/image11.png" alt="Generated results under different LoRA rank values" loading="lazy" /><figcaption>Figure 7. Rank Ablation Results</figcaption></figure>
+              <p>
+                Rank determines the size of the representation space the LoRA adapter can
+                learn. In the experiment, rank=4 reflected building shape and exterior
+                texture relatively stably, while larger ranks could express more detail
+                but also increased the risk of overfitting to dataset-specific artifacts.
+              </p>
+
+              <h3>5.3.2 Alpha Ablation</h3>
+              <figure class="report-figure"><img src="../../projects/assets/customizing-lora-for-diffusion-models/image20.png" alt="Generated results under different LoRA alpha values" loading="lazy" /><figcaption>Figure 8. Alpha Ablation Results</figcaption></figure>
+              <p>
+                Alpha controls how strongly LoRA affects the base model output. With
+                alpha=4, the training data texture was reflected relatively weakly, while
+                larger alpha values produced stronger style transfer. However, if alpha
+                becomes too large, the result can lose prompt fidelity or become visually
+                unstable.
+              </p>
+              <p>
+                These results show that LoRA customization requires balancing style
+                strength and generation stability rather than simply maximizing adapter
+                capacity.
+              </p>
+            </section>
+
+            <section class="report-section" id="papers">
+              <h2>6. Paper Summary</h2>
+              <h3>6.1 LoRA: Low-Rank Adaptation of Large Language Models</h3>
+              <p>
+                The LoRA paper proposes a parameter-efficient fine-tuning method that
+                freezes pretrained model weights and trains only low-rank decomposition
+                matrices. Although the original paper focuses on language models, the
+                same idea can be applied to diffusion model attention layers.
+              </p>
+              <p>
+                The key idea is that the update matrix needed for adaptation has a low
+                intrinsic rank. This allows efficient training and storage while
+                preserving most of the base model's capability.
+              </p>
+
+              <h3>6.2 Denoising Diffusion Probabilistic Models</h3>
+              <p>
+                DDPM formulates generation as the reverse process of gradually removing
+                noise from a sample. During training, noise is added to data step by step,
+                and the model learns to predict and remove that noise.
+              </p>
+              <p>
+                Stable Diffusion builds on this diffusion principle but performs the
+                process in latent space. This project uses that structure as the base
+                model and applies LoRA to adapt its visual behavior.
+              </p>
+            </section>
+
+            <section class="report-section" id="conclusion">
+              <h2>7. Conclusion and Future Work</h2>
+              <p>
+                This project confirmed that LoRA can efficiently adapt Stable Diffusion
+                to custom visual datasets without full fine-tuning. The before/after
+                comparisons show that LoRA reflects dataset-specific texture, color, and
+                stylistic characteristics in generated images.
+              </p>
+              <p>
+                The experiments also showed that dataset consistency matters greatly.
+                Styles with clear visual rules, such as paper craft, were reflected more
+                visibly than broad real-photo datasets. This means dataset construction is
+                as important as model tuning in style adaptation.
+              </p>
+              <p>
+                Future work includes expanding the dataset, improving caption quality,
+                performing quantitative evaluation with CLIP-based metrics, and testing
+                more detailed combinations of rank, alpha, learning rate, and training
+                steps.
+              </p>
+            </section>
+
+            <section class="report-section" id="structure">
+              <h2>8. Project File Structure</h2>
+              <p>Project root: <code>Customizing-LoRA-for-Diffusion-Models</code></p>
+              <ul class="report-label-list">
+                <li><strong>00_Customizing_LoRA.ipynb:</strong> base notebook for checking the full experimental pipeline.</li>
+                <li><strong>01_dataset_training.ipynb:</strong> LoRA training by dataset and before/after comparison image generation.</li>
+                <li><strong>02_ablation_rank.ipynb:</strong> ablation experiment under rank changes.</li>
+                <li><strong>02_ablation_alpha.ipynb:</strong> ablation experiment under alpha changes.</li>
+                <li><strong>03_test.ipynb:</strong> prompt-based generation test after loading trained LoRA/checkpoints.</li>
+                <li><strong>04_monitor.ipynb:</strong> monitoring of training progress, logs, and intermediate results.</li>
+                <li><strong>experiment_utils.py:</strong> shared utilities for preprocessing, training loops, inference, and comparison image generation.</li>
+                <li><strong>environment.yml:</strong> reproducible experiment environment definition.</li>
+                <li><strong>data/:</strong> training datasets for web-crawled images, generated images, and real photographs.</li>
+                <li><strong>lora_experiments/:</strong> directory for dataset-specific training outputs, comparison images, and ablation results.</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="references">
+              <h2>References</h2>
+              <ol>
+                <li>Ho et al., "Denoising Diffusion Probabilistic Models", NeurIPS, 2020.</li>
+                <li>Rombach et al., "High-Resolution Image Synthesis with Latent Diffusion Models", CVPR, 2022.</li>
+                <li>Hu et al., "LoRA: Low-Rank Adaptation of Large Language Models", ICLR, 2022.</li>
+                <li>Li et al., "BLIP: Bootstrapping Language-Image Pre-training for Unified Vision-Language Understanding and Generation", 2022.</li>
+              </ol>
+            </section>
+
+            <div class="report-links">
+              <a class="button primary" href="https://github.com/192cm/customizing-lora-for-diffusion-models">Repository</a>
+              <a class="button secondary" href="index.html">Back to projects</a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

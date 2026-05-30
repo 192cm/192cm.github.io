@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A personal paper radar project that automatically collects recent LLM papers from arXiv and generates Korean summaries with Gemini."
+    />
+    <title>arXiv-tracker | Kunho</title>
+    <link rel="stylesheet" href="../../styles.css?v=20260530-lang" />
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector">
+          <a href="../../projects/arxiv-tracker.html" hreflang="ko">KO</a>
+          <span class="active" aria-current="page">EN</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="report-article">
+        <header class="report-hero">
+          <p class="report-kicker">Project Report</p>
+          <h1>arXiv-tracker: An Automatic Summary Radar for LLM Papers</h1>
+
+          <dl class="report-meta">
+            <div>
+              <dt>Name</dt>
+              <dd>Kunho Jang</dd>
+            </div>
+            <div>
+              <dt>Department</dt>
+              <dd>School of Computer Science and Engineering</dd>
+            </div>
+            <div>
+              <dt>Student ID</dt>
+              <dd>202255597</dd>
+            </div>
+            <div>
+              <dt>Keywords</dt>
+              <dd>arXiv, Gemini, FastAPI, Claude Code</dd>
+            </div>
+          </dl>
+
+          <section class="report-summary" aria-labelledby="summary-title">
+            <h2 id="summary-title">Summary</h2>
+            <p>
+              This is a personal paper radar that automatically collects LLM-related
+              papers uploaded to arXiv every day by keyword, generates five-section
+              Korean summaries with the Google Gemini API, and provides search,
+              favorites, and detail views through a FastAPI-based web UI.
+            </p>
+          </section>
+        </header>
+
+        <div class="report-body">
+          <aside class="report-toc" aria-label="Report table of contents">
+            <strong>Contents</strong>
+            <a href="#intro">1. Project Introduction</a>
+            <a href="#claude-code">2. Claude Code Techniques</a>
+            <a href="#usage">3. Usage</a>
+            <a href="#takeaways">4. Lessons Learned and Limitations</a>
+          </aside>
+
+          <div class="report-content">
+            <section class="report-section" id="intro">
+              <h2>1. Project Introduction</h2>
+              <p>
+                Fast-moving topics such as LLMs, RAG, agents, and alignment make it easy
+                to miss recent papers. This project collects the latest papers based on
+                target keywords and arXiv categories, structures and summarizes their
+                abstracts in Korean, and organizes them into a research dashboard that can
+                be checked every day.
+              </p>
+
+              <h3>1.1 Main Features</h3>
+              <ul class="report-label-list">
+                <li>
+                  <strong>Automatic collection:</strong> fetches recent papers from arXiv
+                  categories <code>cs.CL</code>, <code>cs.LG</code>, and
+                  <code>cs.AI</code> using keyword-based filtering.
+                </li>
+                <li>
+                  <strong>Korean summaries:</strong> uses
+                  <code>gemini-3.1-flash-lite</code> to generate five sections: key
+                  contribution, methodology, results, limitations, and keywords.
+                </li>
+                <li>
+                  <strong>Persistent storage:</strong> stores paper metadata and
+                  summaries in SQLite, with search and favorite support.
+                </li>
+                <li>
+                  <strong>Web interface:</strong> provides list and detail pages through
+                  FastAPI and a Tailwind-style UI.
+                </li>
+              </ul>
+
+              <figure class="report-figure">
+                <img
+                  src="../../projects/assets/arxiv-tracker/image4.png"
+                  alt="arXiv-tracker paper list screen"
+                  loading="lazy"
+                />
+                <figcaption>Screen 1. Main web UI</figcaption>
+              </figure>
+
+              <figure class="report-figure">
+                <img
+                  src="../../projects/assets/arxiv-tracker/image1.png"
+                  alt="arXiv-tracker paper detail page and Korean summary"
+                  loading="lazy"
+                />
+                <figcaption>Screen 2. Paper detail page</figcaption>
+              </figure>
+
+              <h3>1.2 Rationale for LLM Selection</h3>
+              <p>
+                I chose <code>gemini-3.1-flash-lite</code> as the summary backend. The
+                free quota in Google AI Studio is sufficient for personal daily tracking,
+                its response speed is fast for short abstract-level inputs, and its Korean
+                sentence quality is also stable.
+              </p>
+              <p>
+                The model setting was separated into the <code>summary_model</code> value
+                in <code>config.yaml</code>. It can be switched to a Pro-series model if
+                needed. During development, I used Claude Code as a code-writing,
+                refactoring, and debugging tool, separating the roles of the runtime LLM
+                and the development tool.
+              </p>
+            </section>
+
+            <section class="report-section" id="claude-code">
+              <h2>2. Claude Code Techniques Used</h2>
+              <p>
+                I used the custom slash command, skills, subagent, and hook features
+                required by the assignment. Repetitive tasks were reduced into commands,
+                while tasks that needed rules, such as summarization and evaluation, were
+                separated into a dedicated skill and agent.
+              </p>
+
+              <h3>2.1 Custom Slash Commands</h3>
+              <p>
+                I created frequently used workflows as slash commands under
+                <code>.claude/commands/</code>. Instead of manually running the fetcher and
+                summarizer every time, <code>/daily_papers</code> handles collection and
+                summarization in one command.
+              </p>
+              <figure class="report-figure">
+                <img
+                  src="../../projects/assets/arxiv-tracker/image2.png"
+                  alt="Table of slash commands: daily papers, search topic, my save"
+                  loading="lazy"
+                />
+                <figcaption>Table 1. Defined slash commands</figcaption>
+              </figure>
+
+              <h3>2.2 Skills: paper-summary</h3>
+              <p>
+                I defined the Korean summary format in
+                <code>.claude/skills/paper-summary/SKILL.md</code>. When summarizing a
+                paper abstract, it follows the order of key contribution, methodology,
+                results, limitations, and keywords so that the
+                <code>SYSTEM_PROMPT</code> delivered to Gemini and the internal Claude Code
+                summary format remain consistent.
+              </p>
+
+              <h3>2.3 Subagent: paper-evaluator</h3>
+              <p>
+                The subagent defined in <code>.claude/agents/paper-evaluator.md</code>
+                evaluates papers on a 1-to-10 scale by weighted averaging of interest
+                fit, novelty, practicality, and potential impact. Its key advantage is
+                saving context by separating the evaluation task from the main session.
+              </p>
+
+              <h3>2.4 Hook: PreCompact</h3>
+              <p>
+                I configured a PreCompact hook with the natural-language command
+                <code>/update-config</code> so progress is backed up to
+                <code>CLAUDE.md</code> before context is automatically compacted. This is a
+                safeguard to prevent losing context during long sessions.
+              </p>
+              <figure class="report-figure">
+                <img
+                  src="../../projects/assets/arxiv-tracker/image6.png"
+                  alt="Claude settings json permission configuration screen"
+                  loading="lazy"
+                />
+                <figcaption>Screen 3. .claude/settings.json configuration</figcaption>
+              </figure>
+
+              <figure class="report-figure">
+                <img
+                  src="../../projects/assets/arxiv-tracker/image7.png"
+                  alt="daily papers command result"
+                  loading="lazy"
+                />
+                <figcaption>Screen 4. /daily_papers execution result</figcaption>
+              </figure>
+            </section>
+
+            <section class="report-section" id="usage">
+              <h2>3. Usage</h2>
+
+              <h3>3.1 Installation</h3>
+              <p>
+                The Gemini API key is issued from Google AI Studio and injected into the
+                project environment through <code>.env</code>.
+              </p>
+              <pre class="report-code"><code>conda create -n arxiv python=3.11 -y
+conda activate arxiv
+pip install -r requirements.txt
+echo "GEMINI_API_KEY=AIza..." &gt; .env</code></pre>
+              <figure class="report-figure">
+                <img
+                  src="../../projects/assets/arxiv-tracker/image3.png"
+                  alt="arXiv-tracker installation commands"
+                  loading="lazy"
+                />
+                <figcaption>Snippet 1. Installation commands</figcaption>
+              </figure>
+
+              <h3>3.2 Running</h3>
+              <pre class="report-code"><code># CLI mode
+python -m src.fetcher       # collect new papers
+python -m src.summarizer    # Korean summaries
+uvicorn src.app:app --reload --port 8000
+
+# Claude Code mode
+claude
+&gt; /daily_papers</code></pre>
+              <p>
+                After running the app, open <code>http://localhost:8000</code> in the
+                browser. On Mondays, when weekend papers should be included, set
+                <code>days_back</code> in <code>config.yaml</code> to 3.
+              </p>
+              <figure class="report-figure">
+                <img
+                  src="../../projects/assets/arxiv-tracker/image5.png"
+                  alt="arXiv-tracker run commands"
+                  loading="lazy"
+                />
+                <figcaption>Snippet 2. CLI and Claude Code execution modes</figcaption>
+              </figure>
+            </section>
+
+            <section class="report-section" id="takeaways">
+              <h2>4. Lessons Learned and Limitations</h2>
+              <ul class="report-label-list">
+                <li>
+                  <strong>Combining commands and skills:</strong> Within an explicitly
+                  invoked command such as <code>/daily_papers</code>, the implicit rules
+                  of the paper-summary skill are applied together, stabilizing the quality
+                  of repetitive work.
+                </li>
+                <li>
+                  <strong>Low barrier to hooks:</strong> It was convenient to configure
+                  hooks in natural language, but for debugging I also needed to learn how
+                  to read and edit <code>.claude/settings.json</code> directly.
+                </li>
+                <li>
+                  <strong>Separating development tools and runtime models:</strong>
+                  Gemini handled the actual summaries, while Claude Code handled Gemini
+                  SDK call implementation and debugging. This structure worked naturally.
+                </li>
+                <li>
+                  <strong>Adapting to library changes:</strong> Since <code>arxiv</code>
+                  v4.0.0 internally uses <code>requests</code>, I had to override
+                  <code>arxiv._USER_AGENT</code> to avoid 429 blocking. In recent
+                  Starlette versions, the <code>TemplateResponse</code> call format also
+                  separates <code>request=</code> as a keyword argument.
+                </li>
+                <li>
+                  <strong>Limitation:</strong> The current version summarizes only
+                  abstracts, so it is limited for deeper analysis. I plan to add PDF
+                  download and full-text summarization in the future.
+                </li>
+              </ul>
+            </section>
+
+            <div class="report-links">
+              <a class="button primary" href="https://github.com/192cm/arxiv-tracker">
+                Repository
+              </a>
+              <a class="button secondary" href="index.html">Back to projects</a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Final report for a financial RAG system using intelligent query routing and a vision self-correction agent."
+    />
+    <title>Financial RAG System | Kunho</title>
+    <link rel="stylesheet" href="../../styles.css?v=20260530-lang" />
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector">
+          <a href="../../projects/financial-rag-system.html" hreflang="ko">KO</a>
+          <span class="active" aria-current="page">EN</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="report-article">
+        <header class="report-hero">
+          <p class="report-kicker">Final Report</p>
+          <h1>Financial RAG System Using Intelligent Query Routing and a Vision Self-Correction Agent</h1>
+
+          <dl class="report-meta">
+            <div><dt>Name</dt><dd>Kunho Jang</dd></div>
+            <div><dt>Department</dt><dd>School of Computer Science and Engineering</dd></div>
+            <div><dt>Student ID</dt><dd>202255597</dd></div>
+            <div><dt>Keywords</dt><dd>Agentic RAG, Multimodal LLM, Intelligent Routing, Hybrid Retrieval</dd></div>
+          </dl>
+
+          <section class="report-summary" aria-labelledby="summary-title">
+            <h2 id="summary-title">Summary</h2>
+            <p>
+              This project implements an "Intelligent Routing-based Hybrid Corrective
+              Agent" system to accurately extract textual and complex table data from PDF
+              reports distributed through the Financial Supervisory Service's electronic
+              disclosure system, DART. Going beyond the three methods proposed in the
+              original assignment, the final implementation adopts a SOTA architecture
+              that combines a neural reranker with the recent vision-based retrieval
+              model ColPali. The system addresses retrieval-slot confusion and table
+              structure collapse, which are limitations of simple RAG, and achieved an
+              Exact Match of 0.8 and an LLM-as-a-judge score of 4.2, a large improvement
+              over the basic RAG EM of 0.6. It also verified the usefulness of a dynamic
+              extension logic in which the agent uses self-correction to handle cases
+              where the data required by a question continues onto the next page.
+            </p>
+          </section>
+        </header>
+
+        <div class="report-body">
+          <aside class="report-toc" aria-label="Report table of contents">
+            <strong>Contents</strong>
+            <a href="#introduction">1. Introduction</a>
+            <a href="#task">2. Task Formulation</a>
+            <a href="#dataset">3. Dataset</a>
+            <a href="#model">4. Model</a>
+            <a href="#results">5. Experiments and Results</a>
+            <a href="#generation">6. Use of Generative Models</a>
+            <a href="#conclusion">7. Conclusion and Future Work</a>
+            <a href="#references">References</a>
+          </aside>
+
+          <div class="report-content">
+            <section class="report-section" id="introduction">
+              <h2>1. Introduction</h2>
+              <p>
+                Business reports, which are key indicators for judging corporate
+                financial soundness and management performance, consist of hundreds of
+                pages of semi-structured and unstructured data. However, conventional
+                simple RAG systems have two serious weaknesses. First, retrieval slots are
+                often contaminated by the semantic homogeneity of financial terms such as
+                "consolidated cash flow" and "short-term borrowings," which are shared by
+                many companies. This causes documents from the wrong company to enter the
+                retrieval set. Second, complex table structures can be broken during
+                chunking, causing hallucination.
+              </p>
+              <p>
+                To solve these problems, this project adopts Gemini 3.1 Flash Lite, which
+                has high-resolution visual reasoning ability, as the core engine. The goal
+                is to complete an "intelligent loop" that precisely understands the intent
+                of the user's question, filters only relevant data, and uses a vision
+                agent to search for omitted information in real time. The final output
+                goes beyond simple information retrieval and supports a financial
+                intelligence agent that guarantees the reliability of top-ranked evidence
+                through neural reranking.
+              </p>
+              <p>
+                This technology has high practical value across the financial industry.
+                It can reduce the time required by analysts at asset management companies
+                or securities firms to manually investigate disclosure materials, while
+                accurately capturing subtle numerical changes that humans may miss. It
+                can also help companies quickly understand related information, improve
+                the objectivity of decision-making, and minimize operational risk.
+              </p>
+            </section>
+
+            <section class="report-section" id="task">
+              <h2>2. Task Formulation</h2>
+
+              <h3>2.1. Overall System Structure: Four-stage Agentic Pipeline</h3>
+              <p>
+                This project extends the three-stage structure from the proposed system
+                into a more advanced four-stage pipeline by adding a neural reranking
+                stage to guarantee the reliability of retrieval results.
+              </p>
+              <ul class="report-label-list">
+                <li><strong>Step 0 (Intelligent Query Router):</strong> extracts the target company from the question and fixes the retrieval scope at runtime to prevent false matches.</li>
+                <li><strong>Step 1 (Dual-Path Retrieval):</strong> Path A (Text) captures textual context by combining BM25 and vector search. Path B (Vision) improves speed and accuracy for visual-feature retrieval by upgrading from simple image rendering to ColPali vision-language indexing.</li>
+                <li><strong>Step 1.5 (Neural Reranking):</strong> uses BAAI/bge-reranker-v2-m3 to reorder the retrieved candidates and select the top K pages most relevant to the question.</li>
+                <li><strong>Step 2 (Agentic Visual Reasoning):</strong> Gemini analyzes selected page images, verifies whether the document is correct, and dynamically calls following pages within <code>MAX_EXPANSION</code> when a table is cut off.</li>
+              </ul>
+
+              <figure class="report-figure">
+                <img src="../../projects/assets/financial-rag-system/image19.png" alt="Intelligent Multimodal Financial RAG System architecture" loading="lazy" />
+                <figcaption>Figure 1. System Architecture</figcaption>
+              </figure>
+
+              <h3>2.2. Agent Judgment and Self-Correction Logic</h3>
+              <p>The agent does not simply generate an answer; it performs the following autonomous judgments.</p>
+              <ul class="report-label-list">
+                <li><strong>NOT_FOUND_IN_THIS_CANDIDATE:</strong> immediately discards a candidate when the desired item is not on the retrieved page or when the data belongs to a different company.</li>
+                <li><strong>NEXT_PAGE_NEEDED:</strong> autonomously expands the search range when a table or context is cut off at the bottom of the page. This was especially important for complex data such as "R&amp;D expenses" or footnote sections spanning multiple pages.</li>
+                <li><strong>Stopping Criteria:</strong> to prevent infinite loops or excessive token usage, the maximum number of expansion pages is set to <code>MAX_EXPANSION = 3</code>. If no answer is found before the threshold is reached, the agent transitions to <code>NOT_FOUND_IN_THIS_CANDIDATE</code> and terminates the loop.</li>
+              </ul>
+
+              <h3>2.3. Evaluation Method and Ablation Study</h3>
+              <p>To objectively validate the project, the following evaluation framework was built.</p>
+              <ul class="report-label-list">
+                <li><strong>Metrics:</strong> Exact Match (EM), which measures whether the numerical answer exactly matches the gold value, is the main metric. ROUGE-L, BLEU, and LLM-as-a-judge satisfaction scores from 1 to 5 are also used to assess qualitative answer quality.</li>
+                <li><strong>Quantitative Evaluation:</strong> performance changes are measured against a baseline (Method 0). Ablation studies quantify the contribution of Intelligent Routing, Neural Reranker, and the Vision Agent's Sliding Window by removing each module and measuring the performance drop.</li>
+                <li><strong>Qualitative Evaluation:</strong> case studies analyze why the agent chose to expand a specific page or perform filtering, and failure cases are collected to identify edge-case causes.</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="dataset">
+              <h2>3. Dataset</h2>
+              <h3>3.1 Dataset Source and Composition</h3>
+              <ul class="report-label-list">
+                <li><strong>Source:</strong> regular disclosure PDF reports from Korean listed companies collected through DART.</li>
+                <li><strong>Data scale:</strong> unstructured data averaging 300 to 600 pages per company.</li>
+                <li><strong>Characteristics:</strong> large tables such as balance sheets and income statements, plus hundreds of pages of explanatory footnotes.</li>
+              </ul>
+
+              <h3>3.2 Preprocessing and Usage</h3>
+              <ul class="report-label-list">
+                <li><strong>Metadata Injection (Text):</strong> when splitting text with PyMuPDFLoader, metadata such as document filename and page number is forcibly inserted at the beginning of each chunk to prevent context loss during vectorization.</li>
+                <li><strong>High-Res Rendering (Vision):</strong> PyMuPDF (fitz) dynamically renders target pages for agent verification as lossless high-resolution Base64 images at a 2.0 matrix scale.</li>
+                <li><strong>Dynamic Pool Update:</strong> an extensible pipeline automatically updates the routing target company pool at runtime based on PDF filename rules in a specific folder.</li>
+              </ul>
+
+              <h3>3.2. Database Architecture and System Integration</h3>
+              <p>
+                The system is designed as a dual-path architecture so that text retrieval
+                and visual retrieval complement each other. Text handles semantic context,
+                while vision preserves information that can be lost during PDF text
+                extraction.
+              </p>
+              <figure class="report-figure">
+                <img src="../../projects/assets/financial-rag-system/image18.png" alt="Dual-path database architecture" loading="lazy" />
+                <figcaption>Figure 2. Database Architecture</figcaption>
+              </figure>
+
+              <h3>Text Hybrid Path</h3>
+              <ul class="report-label-list">
+                <li><strong>Parent-Child structure:</strong> documents are split into small child chunks of around 400 characters to increase retrieval sensitivity, but when retrieval succeeds, the full parent page containing the actual context is passed to the agent. This solves the context-fragmentation problem of simple RAG at the architectural level.</li>
+                <li><strong>Ensemble Retrieval:</strong> BM25 keyword search and semantic search are fused at a 5:5 ratio to capture both quantitative keywords and qualitative context.</li>
+              </ul>
+
+              <h3>Vision Multi-modal Path</h3>
+              <ul class="report-label-list">
+                <li><strong>ColPali-based Late Interaction:</strong> each PDF page is indexed as a high-resolution image vector. Visual layout information such as table grids, font emphasis, and merged cells, which is often lost during text extraction, is preserved and provided as evidence for the vision agent.</li>
+              </ul>
+
+              <h3>System Integration</h3>
+              <ul class="report-label-list">
+                <li><strong>Runtime MetaData Filtering:</strong> based on the company name extracted by the Intelligent Router, dynamic filtering tracks only the source tag of the relevant company at retrieval time. This blocks interference from other companies' data even inside a database with tens of thousands of pages.</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="model">
+              <h2>4. Model Selection</h2>
+              <h3>4.1. Model Selection</h3>
+              <p>To secure both accuracy and response speed, the optimal technology stack was selected for each module.</p>
+              <ul class="report-label-list">
+                <li><strong>Main model: Gemini 3.1 Flash Lite</strong><br />Reason: because the system must perform an agentic loop, low latency and cost efficiency are essential. Its strong native multimodality, which directly understands table structures inside images without separate OCR, makes it suitable as the Vision Agent controller.</li>
+                <li><strong>Text Embedding model: jhgan/ko-sroberta-multitask</strong><br />Reason: this SBERT-based model is specialized for measuring semantic similarity between Korean sentences and provides stable retrieval performance for Korean financial Q&amp;A. Its light model size minimizes indexing and retrieval overhead.</li>
+                <li><strong>Neural Reranker model: BAAI/bge-reranker-v2-m3</strong><br />Reason: financial reports often share duplicate section titles such as "consolidated statements of financial position" and "operating profit," causing semantic homogeneity during initial bi-encoder retrieval. A cross-encoder BGE reranker directly compares the question and document, greatly improving top-K fit.</li>
+                <li><strong>Vision Retrieval: ColPali</strong><br />Reason: traditional text extraction pipelines lose PDF visual structure such as table layouts. ColPali applies late interaction to a vision-language model and indexes visual features directly from images, complementing text-based retrieval while preserving table lines and layout.</li>
+              </ul>
+
+              <h3>4.2. Experiment and Analysis Method</h3>
+              <p>
+                To verify the contribution of each module, a baseline, intermediate
+                experimental groups, ablation groups, and the full proposed system were
+                compared.
+              </p>
+              <ul class="report-label-list">
+                <li><strong>Method 0 (Baseline):</strong> the most basic text-based hybrid RAG model.</li>
+                <li><strong>Method 1 (Vision Only):</strong> an experimental group that generates answers only from ColPali image retrieval results without text information.</li>
+                <li><strong>Method 2 (Dual Basic):</strong> simply combines text and vision retrieval results and generates a one-shot answer without an agent loop or self-feedback.</li>
+                <li><strong>w/o Filter (Ablation):</strong> removes company-name pre-filtering through Intelligent Query Router from the SOTA model to measure noise from other company documents.</li>
+                <li><strong>w/o Reranker (Ablation):</strong> removes the Neural Reranker from the SOTA model and measures accuracy when the agent loop uses only initial keyword/embedding retrieval results.</li>
+                <li><strong>w/o Agent Window (Ablation):</strong> removes the Sliding Window page-expansion function to test whether complex table data can be processed from a single page.</li>
+                <li><strong>SOTA (Full Proposed):</strong> the final integrated model combining pre-filtering, neural reranking, agentic vision feedback, and window expansion.</li>
+              </ul>
+              <p>
+                This setup makes it possible to evaluate not only final performance but
+                also the practical value and cost of each architectural choice.
+              </p>
+            </section>
+
+            <section class="report-section" id="results">
+              <h2>5. Experimental Environment and Results</h2>
+              <h3>5.1. Experimental Setup</h3>
+              <p>
+                The experiment was conducted in an environment configured for local PDF
+                rendering, vector retrieval, vision retrieval, neural reranking, and
+                Gemini-based agent reasoning.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/financial-rag-system/image13.png" alt="System configuration table" loading="lazy" /><figcaption>Table 1. System Configuration</figcaption></figure>
+              <p>
+                Golden Set: to prove the effectiveness of this project, ten difficult
+                financial questions that cannot be solved by simple search alone were
+                manually selected from DART disclosure documents.
+              </p>
+              <p>Evaluation metrics:</p>
+              <ul class="report-label-list">
+                <li><strong>Exact Match (EM):</strong> the strictest metric, measuring whether the number and unit exactly match the gold answer.</li>
+                <li><strong>LLM-as-a-judge:</strong> Gemini 1.5 Pro evaluates not only the answer value, but also contextual consistency and source citation accuracy on a 1-to-5 scale.</li>
+                <li><strong>Latency &amp; Token Usage:</strong> measures operational cost and real-time usability under agentic loops.</li>
+              </ul>
+              <figure class="report-figure"><img src="../../projects/assets/financial-rag-system/image11.png" alt="Result table" loading="lazy" /><figcaption>Screen 1. Result Table</figcaption></figure>
+
+              <h3>5.2. Experimental Results: Metrics and Model Comparison</h3>
+              <p>
+                The results show that the SOTA model achieved the best performance with
+                an Exact Match of 0.8, compared with 0.6 for the text-based baseline.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/financial-rag-system/image16.png" alt="Performance metrics table" loading="lazy" /><figcaption>Table 2. Performance Metrics</figcaption></figure>
+              <p>
+                Although the Vision Only model failed at mechanical matching, it recorded
+                a high LLM-judged score of 4.2, demonstrating the strong potential of
+                extracting information from images. However, the large increase in
+                latency, about 13 times higher, was observed as the cost of the SOTA
+                model's sequential agentic loop and neural reranking process. In a
+                financial domain where integrity and accuracy matter far more than
+                processing speed, this is a reasonable tradeoff.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/financial-rag-system/image14.png" alt="Comparison of performance metrics by model" loading="lazy" /><figcaption>Figure 3. Comparison of Performance Metrics by Model</figcaption></figure>
+
+              <h3>5.3. Quantitative Analysis: Ablation Study</h3>
+              <p>
+                Ablation results show that all three key modules contribute to final
+                accuracy: intelligent routing, neural reranking, and sliding-window page
+                expansion.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/financial-rag-system/image12.png" alt="Ablation study table" loading="lazy" /><figcaption>Table 3. Ablation Study</figcaption></figure>
+              <p>Role analysis by module:</p>
+              <ul class="report-label-list">
+                <li><strong>Intelligent Routing:</strong> the 40% accuracy drop after removing filtering is caused by semantic homogeneity in financial documents. Many corporate reports share identical section titles, so without fixing the company name in advance, vector search exposes similar pages from other companies. Intelligent Routing blocks this entity hallucination by limiting the search space to the target company.</li>
+                <li><strong>Neural Reranking:</strong> neural scores based on cross-attention compensate for subtle context missed by bi-encoder retrieval and produced an additional 10% performance gain. It guarantees the quality of the top-K candidates by comparing the specific value requested by the question, such as distinctions between current and prior period, with document content.</li>
+                <li><strong>Sliding Window:</strong> financial statements often suffer from truncation when tables continue across page boundaries or footnotes extend onto the next page. The 10% performance drop without page expansion proves that the agent's ability to explore surrounding context and reconstruct information is essential for complex table analysis.</li>
+              </ul>
+
+              <h3>5.4. Qualitative Analysis: Case Study</h3>
+              <p>The system's effectiveness was analyzed using generated answers and agent reasoning logs.</p>
+              <p>
+                <strong>Case 1 (Sliding Window):</strong> when a key table continued onto
+                the next page, the agent recognized that the current candidate was
+                incomplete, requested an additional page, and recovered the missing
+                context.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/financial-rag-system/image17.png" alt="Sliding window agent log" loading="lazy" /><figcaption>Screen 2. Sliding Window</figcaption></figure>
+              <p>
+                <strong>Case 2 (Hallucination Prevention through Intelligent Routing):</strong>
+                when two companies with similar names, Samsung SDI and Samsung
+                Electronics, appeared in retrieval candidates, the router fixed the search
+                scope to the explicitly requested Samsung Electronics and prevented the
+                critical error of answering with another company's financial numbers.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/financial-rag-system/image15.png" alt="Filtering agent log" loading="lazy" /><figcaption>Screen 3. Filtering</figcaption></figure>
+            </section>
+
+            <section class="report-section" id="generation">
+              <h2>6. Use of Generative Models</h2>
+              <p>
+                Gemini was used not only as an answer generator but also as the controller
+                of the entire agentic workflow.
+              </p>
+              <h3>6.1. Use Inside the System Architecture</h3>
+              <p>Gemini 3.1 Flash Lite was used as an Agent Controller for the entire pipeline rather than a simple text generator.</p>
+              <ul class="report-label-list">
+                <li><strong>Intelligent Query Routing (Zero-shot):</strong> analyzes the user's natural-language intent and extracts the target entity and specific section. A constraint such as "answer with only one word without complex explanation" standardizes the data passed to the next pipeline stage.</li>
+                <li><strong>Vision Verification (Role-playing):</strong> when analyzing page images, the agent is assigned the role of a financial document auditor. It does not merely read numbers, but double-checks whether table period and unit information match the question.</li>
+                <li><strong>Self-Correction Logic (State Machine):</strong> agent responses are output as a JSON schema with five explicit statuses, such as SUCCESS, NEXT_PAGE_NEEDED, and WRONG_DOCUMENT, enabling a state-machine-based agentic loop in which the LLM controls pipeline flow.</li>
+                <li><strong>Final Synthesis (Evidence-based):</strong> when generating final output from verified evidence pages, document name and page number must be specified to preserve knowledge transparency.</li>
+              </ul>
+
+              <h3>6.2. Development and Documentation Assistance</h3>
+              <p>Outside the system itself, AI was used as an auxiliary tool to improve development productivity.</p>
+              <ul class="report-label-list">
+                <li><strong>Agent logic implementation assistance:</strong> helped write exception-handling logic for complex agentic loops and regular-expression-based data parsing code.</li>
+                <li><strong>Modular and extensible architecture design:</strong> helped modularize Retrieval, Reranker, and Agent Loop so they can operate independently while connecting flexibly, making feature changes and new-data additions easier to maintain.</li>
+                <li><strong>Report writing and visualization:</strong> helped plan the logical structure of this final report and generate images for visualizing performance-analysis results.</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="conclusion">
+              <h2>7. Conclusion and Future Work</h2>
+              <p>
+                This project confirmed that combining intelligent routing, neural
+                reranking, vision retrieval, and agentic self-correction can improve
+                reliability in financial PDF question answering. It also showed that
+                multimodal retrieval is especially useful for tables and disclosure
+                reports where layout matters.
+              </p>
+              <ul class="report-label-list">
+                <li><strong>Latency Reduction:</strong> the current latency of about 133 seconds needs improvement for user experience. Retrieval and reasoning will be converted to asynchronous parallel processing, and token optimization plus KV caching will be applied for frequent agent-loop calls.</li>
+                <li><strong>Tool-Augmented Reasoning:</strong> beyond numerical extraction, the agent will be given tools for unstructured-data analysis so that it can calculate year-over-year growth rates or financial ratios autonomously.</li>
+                <li><strong>Difficulty of Multi-Document Cross-Referencing:</strong> the current system specializes in precise analysis of a single company's report, so complex questions comparing values across multiple large documents, such as competitor comparisons, may still cause information confusion.</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="references">
+              <h2>References</h2>
+              <ol>
+                <li>Google Cloud, "Gemini 3.1 Flash Lite Technical Documentation".</li>
+                <li>BAAI, "BGE Reranker v2: Multi-stage Retrieval for Production".</li>
+                <li>LangChain, "Agentic RAG: Corrective Strategies for Financial Analysis".</li>
+                <li>Faysse, et al. "ColPali: Efficient Document Retrieval with Vision Language Models", 2024.</li>
+                <li>Cuconasu, et al. "The Power of Prompting: Engineering RAG Systems for Real-World Applications", 2024.</li>
+                <li>Zhang, et al. "Agentic Retrieval-Augmented Generation for Complex Question Answering", 2024.</li>
+                <li>Nelson F. Liu, et al. "Lost in the Middle: How Language Models Use Long Contexts", 2023.</li>
+              </ol>
+            </section>
+
+            <div class="report-links">
+              <a class="button primary" href="https://github.com/192cm/financial-rag-system">Repository</a>
+              <a class="button secondary" href="index.html">Back to projects</a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

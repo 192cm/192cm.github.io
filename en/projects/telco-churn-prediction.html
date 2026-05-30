@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Full report for a telco customer churn prediction and monitoring project using XGBoost and Evidently AI."
+    />
+    <title>Telco Customer Churn Prediction & Monitoring | Kunho</title>
+    <link rel="stylesheet" href="../../styles.css?v=20260530-lang" />
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector">
+          <a href="../../projects/telco-churn-prediction.html" hreflang="ko">KO</a>
+          <span class="active" aria-current="page">EN</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="report-article">
+        <header class="report-hero">
+          <p class="report-kicker">Project Report</p>
+          <h1>Telco Customer Churn Prediction &amp; Monitoring</h1>
+          <dl class="report-meta">
+            <div><dt>Published</dt><dd>2025. 12. 26.</dd></div>
+            <div><dt>Task</dt><dd>Binary Classification</dd></div>
+            <div><dt>Model</dt><dd>XGBoost</dd></div>
+            <div><dt>Metrics</dt><dd>Recall, Precision, F1-score</dd></div>
+          </dl>
+        </header>
+
+        <div class="report-body">
+          <aside class="report-toc" aria-label="Report table of contents">
+            <strong>Contents</strong>
+            <a href="#overview">1. Project Overview</a>
+            <a href="#data">2. Data Overview</a>
+            <a href="#eda">3. EDA</a>
+            <a href="#preprocessing">4. Data Preprocessing</a>
+            <a href="#modeling">5. Modeling and Optimization</a>
+            <a href="#results">6. Results and Analysis</a>
+            <a href="#conclusion">7. Conclusion</a>
+            <a href="#appendix">8. Appendix</a>
+          </aside>
+
+          <div class="report-content">
+            <section class="report-section" id="overview">
+              <h2>1. Project Overview</h2>
+              <h3>1.1. Problem Definition and Goal</h3>
+              <p>
+                This project aims to analyze customer data from a telecommunications
+                company and identify high-risk customers who are likely to churn in
+                advance. It is a supervised-learning binary classification problem that
+                predicts whether a customer will churn based on historical data. By
+                identifying customers with high churn probability, the company can run
+                retention promotions at the right time and encourage customers to stay.
+              </p>
+              <h3>1.2. Evaluation Metrics</h3>
+              <p>
+                Considering class imbalance in the data, this project selected Recall,
+                Precision, and F1-score as key performance indicators instead of simple
+                Accuracy. Increasing Recall helps detect actual churners without missing
+                them, but it also risks unnecessary marketing cost by incorrectly
+                classifying customers who would not churn. Therefore, the optimal
+                threshold should maximize business profit by comparing retention cost and
+                opportunity cost from customer loss. This analysis assumes that the loss
+                from missing an actual churner is larger, so the model prioritizes Recall
+                while ultimately aiming for a high F1-score, the harmonic mean of
+                Precision and Recall.
+              </p>
+            </section>
+
+            <section class="report-section" id="data">
+              <h2>2. Data Overview</h2>
+              <h3>2.1. Data Source and Structure</h3>
+              <p>
+                This project uses the Telco Customer Churn dataset from IBM Sample Data
+                Sets. The dataset contains information on 7,043 customers, and each
+                customer has 21 features.
+              </p>
+              <h3>2.2. Feature Description</h3>
+              <p>The features in the dataset are as follows.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr><th>Group</th><th>Feature</th><th>Description</th><th>Data Type</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><b>Identifier</b></td><td>customerID</td><td>Unique customer ID, excluded during analysis</td><td>Object</td></tr>
+                    <tr><td><b>Target</b></td><td>Churn</td><td>Whether the customer churned in the previous month, Yes or No</td><td>Object</td></tr>
+                    <tr><td><b>Demographics</b></td><td>gender</td><td>Gender, Male or Female</td><td>Object</td></tr>
+                    <tr><td></td><td>SeniorCitizen</td><td>Whether the customer is 65 or older, 1 for yes and 0 for no</td><td>Int</td></tr>
+                    <tr><td></td><td>Partner</td><td>Whether the customer has a partner</td><td>Object</td></tr>
+                    <tr><td></td><td>Dependents</td><td>Whether the customer has dependents</td><td>Object</td></tr>
+                    <tr><td><b>Contract</b></td><td>tenure</td><td>Number of months subscribed to the service</td><td>Int</td></tr>
+                    <tr><td></td><td>Contract</td><td>Contract type: month-to-month, one year, or two year</td><td>Object</td></tr>
+                    <tr><td></td><td>PaperlessBilling</td><td>Whether paperless billing is used</td><td>Object</td></tr>
+                    <tr><td></td><td>PaymentMethod</td><td>Payment method such as electronic check, mailed check, bank transfer, or credit card</td><td>Object</td></tr>
+                    <tr><td><b>Billing</b></td><td>MonthlyCharges</td><td>Monthly charge amount</td><td>Float</td></tr>
+                    <tr><td></td><td>TotalCharges</td><td>Total charge amount since signup</td><td>Object*</td></tr>
+                    <tr><td><b>Service</b></td><td>PhoneService</td><td>Whether phone service is subscribed</td><td>Object</td></tr>
+                    <tr><td></td><td>MultipleLines</td><td>Whether multiple lines are used</td><td>Object</td></tr>
+                    <tr><td></td><td>InternetService</td><td>Internet service provider: DSL, Fiber optic, or No</td><td>Object</td></tr>
+                    <tr><td></td><td>OnlineSecurity</td><td>Whether online security is subscribed</td><td>Object</td></tr>
+                    <tr><td></td><td>OnlineBackup</td><td>Whether online backup is subscribed</td><td>Object</td></tr>
+                    <tr><td></td><td>DeviceProtection</td><td>Whether device protection is subscribed</td><td>Object</td></tr>
+                    <tr><td></td><td>TechSupport</td><td>Whether technical support is subscribed</td><td>Object</td></tr>
+                    <tr><td></td><td>StreamingTV</td><td>Whether TV streaming is used</td><td>Object</td></tr>
+                    <tr><td></td><td>StreamingMovies</td><td>Whether movie streaming is used</td><td>Object</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="report-section" id="eda">
+              <h2>3. EDA</h2>
+              <h3>3.1. Checking Data Distributions</h3>
+              <h3>Categorical Features</h3>
+              <figure class="report-figure"><img src="../../projects/assets/telco-churn-prediction/image02.png" alt="Categorical Features" loading="lazy" /><figcaption>Categorical Features</figcaption></figure>
+              <p>
+                Categorical features show that customer churn is strongly influenced by
+                contract period, service type, and payment method. The most prominent
+                feature is Contract. Month-to-month customers have overwhelmingly high
+                churn rates, so promotions that encourage short-term subscribers to move
+                to long-term contracts are likely to be central to churn prevention.
+              </p>
+              <p>
+                In InternetService, Fiber optic users churn more than DSL users. This
+                suggests possible dissatisfaction with price competitiveness or service
+                quality, so a service satisfaction survey should be conducted. In
+                PaymentMethod, Electronic check users show high churn, likely due to
+                inconvenience in payment or characteristics of the customer segment that
+                prefers this method, such as high price sensitivity.
+              </p>
+              <h3>Numerical Features</h3>
+              <figure class="report-figure"><img src="../../projects/assets/telco-churn-prediction/image03.png" alt="Numerical Features" loading="lazy" /><figcaption>Numerical Features</figcaption></figure>
+              <p>
+                The distributions of numerical variables reveal clear patterns and
+                preprocessing needs. Tenure shows a U-shaped distribution with high
+                frequency at both ends, meaning there are many new and long-term
+                customers. The high churn rate in the first one to two months suggests
+                possible problems in the early service experience, so onboarding programs
+                for new customers and retention strategies for long-term customers should
+                be performed together.
+              </p>
+              <p>
+                MonthlyCharges has a multimodal distribution concentrated around $20 and
+                $70 to $100. This indicates segmentation into customers using only basic
+                services and customers using multiple services. TotalCharges is
+                left-skewed with a long right tail, which can destabilize variance and
+                harm model training. Therefore, log transformation should be applied to
+                approximate a normal distribution.
+              </p>
+              <h3>3.2. Correlation and Insights</h3>
+              <figure class="report-figure"><img src="../../projects/assets/telco-churn-prediction/image04.png" alt="Correlation Matrix" loading="lazy" /><figcaption>Correlation Matrix</figcaption></figure>
+              <h3>Positive Correlations That Promote Churn</h3>
+              <p>
+                Variables positively correlated with Churn show that contract type,
+                additional services, and internet product type are major drivers. The
+                strongest churn factor is month-to-month contract
+                (<code>Contract_Month-to-month</code>, 0.41). Customers with short
+                contract periods can cancel easily, so incentives for long-term contracts
+                are needed.
+              </p>
+              <p>
+                Not using additional services, such as <code>OnlineSecurity_No</code>
+                (0.35) and <code>TechSupport_No</code> (0.34), is also closely related to
+                churn because customers without these services have lower dependence on
+                the service ecosystem. Fiber optic users also show high churn (0.31),
+                suggesting possible pricing dissatisfaction or quality issues.
+              </p>
+              <h3>Negative Correlations That Suppress Churn</h3>
+              <p>
+                A strong negative correlation with Churn means customers with that
+                characteristic are less likely to churn. Tenure (-0.35) is an important
+                suppressing feature, showing that churn decreases as the subscription
+                period increases. Two-year contracts (-0.30) also suppress churn,
+                confirming that converting short-term customers to long-term contracts is
+                an effective prevention strategy.
+              </p>
+              <h3>Multicollinearity</h3>
+              <p>
+                The heatmap reveals multicollinearity between variables. Items such as
+                "No internet service" inside OnlineSecurity, StreamingTV, and TechSupport
+                have a correlation coefficient of 1.00 with each other, meaning they
+                contain essentially the same information. This can increase unnecessary
+                computation and cause overfitting, so feature selection or category
+                consolidation is needed during preprocessing.
+              </p>
+            </section>
+
+            <section class="report-section" id="preprocessing">
+              <h2>4. Data Preprocessing</h2>
+              <h3>4.1. Preprocessing Strategy and Key Techniques</h3>
+              <h3>Solving Multicollinearity and Reducing Dimensionality</h3>
+              <p>
+                The value "No internet service" in additional-service variables such as
+                OnlineSecurity and TechSupport has a perfect correlation with the value
+                "No" in InternetService. This increases unnecessary computation and
+                creates multicollinearity. Therefore, those values are unified as "No" to
+                remove duplicate information, reduce one-hot encoded feature count, and
+                lower overfitting. A custom transformer,
+                <code>ServiceValueSimplifier</code>, was implemented for this purpose.
+              </p>
+              <h3>Distribution Correction for Numerical Features</h3>
+              <p>
+                TotalCharges has positive skew with a long right tail. Such skewed data
+                can reduce the performance of linear or distance-based algorithms, so log
+                transformation is applied. StandardScaler then aligns all numerical
+                variables to mean 0 and variance 1.
+              </p>
+              <h3>Categorical Feature Encoding</h3>
+              <p>One-Hot Encoding is performed for all categorical features so the model can interpret them.</p>
+              <h3>4.2. Pipeline Construction</h3>
+              <p>
+                A Scikit-Learn Pipeline was built to automate the preprocessing strategy
+                and apply the same transformation to training and test datasets.
+              </p>
+              <h3>Custom Transformer</h3>
+              <p>A class is defined to solve multicollinearity.</p>
+              <pre class="report-code"><code>class ServiceValueSimplifier(BaseEstimator, TransformerMixin):
+    """
+    Custom Transformer to simplify redundant categorical values.
+    Example: Merges 'No internet service' into 'No' for cleaner categories.
+    """</code></pre>
+              <h3>Preprocessing Pipeline</h3>
+              <p>
+                Pipelines for numerical, categorical, and log-transformed data are
+                combined with ColumnTransformer, and ServiceValueSimplifier is placed at
+                the front to complete the final preprocessing pipeline.
+              </p>
+              <pre class="report-code"><code># Categorical Pipeline: Impute missing values -> One-Hot Encode
+cat_pipeline = make_pipeline(
+    SimpleImputer(strategy='most_frequent'),
+    OneHotEncoder(handle_unknown='ignore', drop='if_binary')
+)
+
+full_pipeline = Pipeline([
+    ("simplifier", ServiceValueSimplifier()),
+    ("preprocessing", preprocessor)
+])</code></pre>
+            </section>
+
+            <section class="report-section" id="modeling">
+              <h2>5. Modeling and Optimization</h2>
+              <h3>5.1. Model Selection</h3>
+              <p>
+                This project selected XGBoost as the classifier. XGBoost improves the
+                Gradient Boosting algorithm through parallel processing and optimization
+                techniques and performs well on tabular classification problems compared
+                with models such as Random Forest and SVM. Since churn customers account
+                for only about 27% of the data, the <code>scale_pos_weight</code>
+                parameter can adjust loss-function weighting and strengthen learning on
+                the minority churn class. L1 and L2 regularization are included in the
+                objective function, reducing overfitting while learning complex patterns.
+              </p>
+              <pre class="report-code"><code># Initialize the XGBoost Classifier
+xgb_clf = XGBClassifier(
+    use_label_encoder=False,
+    eval_metric='aucpr',
+    random_state=42,
+    n_jobs=-1
+)</code></pre>
+              <p>The final pipeline containing preprocessing and the model is as follows.</p>
+              <pre class="report-code"><code>full_pipeline = Pipeline([
+    ("simplifier", ServiceValueSimplifier()),
+    ("preprocessing", preprocessor),
+    ("XGBClassifier", xgb_clf)
+])</code></pre>
+
+              <h3>5.2. Hyperparameter Tuning</h3>
+              <p>
+                GridSearchCV was used to optimize model performance. F1-score, the
+                harmonic mean of Recall and Precision, was selected as the optimization
+                metric instead of simple accuracy. To prevent data bias and improve
+                reliability, 10-Fold Cross Validation was applied.
+              </p>
+              <ul class="report-label-list">
+                <li><strong>scale_pos_weight:</strong> searches from 1 to 3 to find the best balance between Precision and Recall under imbalanced data.</li>
+                <li><strong>n_estimators, learning_rate:</strong> control model complexity and learning speed.</li>
+                <li><strong>max_depth:</strong> controls tree depth to prevent overfitting.</li>
+              </ul>
+              <pre class="report-code"><code># Define Hyperparameter Search Grid
+param_grid = [{
+    'XGBClassifier__n_estimators': [100, 300, 500, 700, 900],
+    'XGBClassifier__max_depth': [3, 5, 7, 9],
+    'XGBClassifier__learning_rate': [0.01, 0.05, 0.1],
+    'XGBClassifier__scale_pos_weight': [1, 2, 3]
+}]</code></pre>
+
+              <h3>5.3 Tuning Results and Best Parameters</h3>
+              <p>
+                After conducting 10-Fold cross validation over 540 parameter combinations
+                for a total of 5,400 training runs, the parameter combination with the
+                best generalization performance was selected.
+              </p>
+              <h3>Best Parameters and Performance</h3>
+              <p>Best F1-Score (CV Mean): 0.6434</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <tbody>
+                    <tr><td><b>scale_pos_weight</b></td><td><b>2</b></td><td>Weights churn customers twice as much as normal customers, validating the need to secure Recall under class imbalance.</td></tr>
+                    <tr><td><b>max_depth</b></td><td><b>3</b></td><td>Uses shallow trees to suppress overfitting and focus on generalized patterns.</td></tr>
+                    <tr><td><b>learning_rate</b></td><td><b>0.01</b></td><td>Uses a low learning rate for stable gradual learning.</td></tr>
+                    <tr><td><b>n_estimators</b></td><td><b>500</b></td><td>Uses enough trees to compensate for the low learning rate.</td></tr>
+                    <tr><td><b>subsample</b></td><td><b>0.6</b></td><td>Randomly samples 60% of the data during training to improve diversity and prevent overfitting.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <h3>Result Analysis</h3>
+              <p>
+                The selected parameters, such as max_depth 3 and learning_rate 0.01, show
+                that the model prefers conservative and stable predictions rather than
+                complex sensitive boundaries. The scale_pos_weight value of 2 indicates
+                that not missing actual churners, or Recall, contributed more to
+                performance improvement than simple accuracy.
+              </p>
+              <figure class="report-figure"><img src="../../projects/assets/telco-churn-prediction/image05.png" alt="Best Parameters and Performance" loading="lazy" /><figcaption>Best Parameters and Performance</figcaption></figure>
+            </section>
+
+            <section class="report-section" id="results">
+              <h2>6. Results and Analysis</h2>
+              <h3>6.1. Final Performance Evaluation</h3>
+              <h3>Test Dataset Evaluation</h3>
+              <pre class="report-code"><code>              precision    recall  f1-score   support
+
+          No       0.89      0.78      0.83      1035
+         Yes       0.55      0.75      0.63       374
+
+    accuracy                           0.77      1409</code></pre>
+              <p>
+                For the churn class (Yes), Precision was 0.55, Recall was 0.75, and
+                F1-score was 0.63. This shows that the Recall-centered strategy defined
+                at the beginning worked successfully. In churn prediction, the false
+                negative cost of missing customers who actually churn is much more severe
+                than the false positive cost of spending marketing budget on customers
+                who would not churn. Although lower Precision can cause unnecessary cost,
+                detecting 75% of actual churners in advance is a meaningful result.
+              </p>
+              <h3>Detailed Analysis</h3>
+              <p>The confusion matrix allows a more detailed analysis of the model's prediction pattern.</p>
+              <figure class="report-figure"><img src="../../projects/assets/telco-churn-prediction/image06.png" alt="Confusion Matrix" loading="lazy" /><figcaption>Confusion Matrix</figcaption></figure>
+              <ul class="report-label-list">
+                <li><strong>Missed churners (False Negative: 99):</strong> 99 customers actually churned but were incorrectly predicted as non-churn. They represent about 26% of actual churners and should be reduced in future model maintenance.</li>
+                <li><strong>Secured defense opportunities (True Positive: 275):</strong> 275 actual churners were correctly predicted as churners, giving the company an opportunity to offer proactive promotions.</li>
+                <li><strong>Over-detection (False Positive: 218):</strong> these customers did not churn but were predicted to churn. Although they may create unnecessary marketing cost, retention marketing such as discount coupons or check-in messages can also improve customer satisfaction, so this can be interpreted as proactive defense cost rather than pure failure.</li>
+              </ul>
+              <h3>6.2. Feature Importance</h3>
+              <p>The following analysis shows which features most strongly affected churn prediction.</p>
+              <figure class="report-figure"><img src="../../projects/assets/telco-churn-prediction/image07.png" alt="Feature Importance" loading="lazy" /><figcaption>Feature Importance</figcaption></figure>
+              <ul class="report-label-list">
+                <li><strong>cat__Contract_Month-to-month:</strong> the influence of contract type observed in EDA was also verified as the dominant feature in model learning. It had more than twice the importance score of the second feature, showing that contract period is the top priority in churn prevention.</li>
+                <li><strong>cat__InternetService_Fiber optic:</strong> Fiber optic strongly affects the model's churn prediction, meaning the algorithm captured price resistance or quality issues within this customer group.</li>
+                <li><strong>cat__OnlineSecurity_No, cat__TechSupport_No:</strong> while individual service subscription is important, the model classifies customers without bundled services as risky. This supports the hypothesis that bundled products mathematically lower churn probability.</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="conclusion">
+              <h2>7. Conclusion</h2>
+              <h3>7.1. Business Impact and Limitations</h3>
+              <p>
+                This project successfully built an XGBoost model based on customer data
+                to predict churn in advance and identify major churn factors. The
+                business impact and limitations are as follows.
+              </p>
+              <h3>Minimizing Revenue Loss Through Proactive Churn Defense</h3>
+              <p>
+                The model detected about 75% of churn customers in advance. This means
+                the company can move beyond after-the-fact response and intervene before
+                customers leave. If promotions are offered to the 275 high-risk customers
+                identified in the test set, a significant number of customers may be
+                retained and customer lifetime value can be preserved.
+              </p>
+              <h3>Improving Marketing Efficiency and Targeting Precision</h3>
+              <p>
+                By focusing resources only on customers with high churn probability
+                rather than conducting random marketing, marketing ROI can be maximized.
+                Month-to-month contract customers and customers without bundled products
+                were identified as key targets. Customized promotions such as long-term
+                contract discounts or bundle offers can improve marketing success rates.
+              </p>
+              <h3>Evidence for Improving Service Product Strategy</h3>
+              <p>
+                The high churn rate among Fiber optic users shows that service quality
+                checks or pricing-plan reform may be urgent. Solving the issue identified
+                by the data can strengthen overall service competitiveness.
+              </p>
+              <h3>7.2. Limitations and Future Work</h3>
+              <p>These are constraints to consider when interpreting model performance and directions for improvement.</p>
+              <h3>Precision Limitation and Cost Issue</h3>
+              <p>
+                Because the strategy prioritizes churn Recall, Precision is relatively
+                low at 0.55. Marketing cost may be spent on customers predicted to churn
+                who actually remain. To address this, low-cost marketing methods or
+                differentiated benefits by churn probability threshold are needed.
+              </p>
+              <h3>Lack of Qualitative Data</h3>
+              <p>
+                The current model is based on quantitative data such as contract and
+                billing information. Direct customer voices such as complaints,
+                consultation history, and call-quality logs are not reflected. If
+                consultation text is added through text mining or NLP, the model could
+                identify not only churn signals but also more specific causes.
+              </p>
+              <h3><b>7.3. Model Operation and Maintenance Strategy</b></h3>
+              <p>This is a pipeline plan for sustainable model operation beyond one-time analysis.</p>
+              <pre class="report-code"><code>[ START: MLOps Pipeline ]
+        |
+        v
+[ 1. Data Loading ]
+(Load CSV & Simulate Drift)
+        |
+        v
+[ 2. Drift Monitoring ]
+(Evidently AI Report)
+        |
+        v
+[ 3. Retraining Trigger ]
+(If drift exceeds threshold)
+        |
+        v
+[ 4. Model Retraining ]
+(Preprocessing + GridSearchCV)
+        |
+        v
+[ 5. Quality Gate ]
+(Recall >= 0.7 and F1 >= 0.6)
+        |
+        v
+[ 6. Model Save / Deploy ]</code></pre>
+              <h3>Monitoring System for Data Drift</h3>
+              <p>
+                To prevent model degradation and maintain performance, a data drift
+                detection module using Evidently AI was implemented. The
+                <code>check_data_drift</code> function statistically tests the
+                distribution difference between the reference data used in training and
+                newly incoming current data.
+              </p>
+              <p>
+                The system works in two stages. First, <code>DataDriftPreset</code>
+                analyzes overall dataset drift and generates a visual HTML report in the
+                <code>reports/</code> directory with a timestamp. Second, the internal
+                metrics of the report are parsed programmatically for automated decision
+                making. If a feature's drift score exceeds a predefined threshold, the
+                function returns True and triggers the retraining pipeline automatically.
+              </p>
+              <pre class="report-code"><code>def check_data_drift(ref_data, curr_data):
+    """
+    Detects data drift between the reference and current datasets using Evidently AI.
+    It generates an HTML report and returns whether significant drift was found.
+    """</code></pre>
+              <h3>Retraining Pipeline Construction</h3>
+              <p>
+                When drift is detected, the system performs retraining through data
+                merging, preprocessing, and model tuning. Reference data and new current
+                data are first merged. Numerical missing-value handling, scaling, and
+                categorical one-hot encoding are then applied consistently. XGBoost is
+                used for modeling, and GridSearchCV searches for optimal hyperparameters.
+              </p>
+              <p>
+                The key feature of the system is that the retrained model is not deployed
+                automatically without validation. It is approved as a new model only when
+                it satisfies both Recall of at least 0.7 and F1-score of at least 0.6 on
+                the test dataset. Models that pass are saved and deployed; models that do
+                not pass are discarded.
+              </p>
+            </section>
+
+            <section class="report-section" id="appendix">
+              <h2>8. Appendix</h2>
+              <ul class="report-label-list">
+                <li>Code: <a href="https://github.com/192cm/Telco-Customer-Churn.git"><span>https://github.com/192cm/Telco-Customer-Churn.git</span></a></li>
+                <li>Data: <a href="https://www.kaggle.com/datasets/blastchar/telco-customer-churn"><span>https://www.kaggle.com/datasets/blastchar/telco-customer-churn</span></a></li>
+              </ul>
+            </section>
+
+            <div class="report-links">
+              <a class="button primary" href="https://github.com/192cm/Telco-Customer-Churn.git">Repository</a>
+              <a class="button secondary" href="index.html">Back to projects</a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>
