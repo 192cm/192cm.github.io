@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Human Evaluation과 LLM-as-Judge를 Cohen's kappa로 비교한 Claude Code 기반 요약 품질 평가 프로젝트입니다." />
+    <title>Claude Code Eval Kappa | Kunho</title>
+    <link rel="stylesheet" href="../styles.css?v=20260530-8" />
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector">
+          <span class="active" aria-current="page">KO</span>
+          <a href="../en/projects/claude-code-eval-kappa.html" hreflang="en">EN</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="report-article">
+        <header class="report-hero">
+          <p class="report-kicker">Evaluation Report</p>
+          <h1>Claude Code Eval Kappa: Human vs LLM-as-Judge 요약 품질 평가</h1>
+
+          <dl class="report-meta">
+            <div><dt>이름</dt><dd>장건호</dd></div>
+            <div><dt>학과</dt><dd>정보컴퓨터공학부</dd></div>
+            <div><dt>학번</dt><dd>202255597</dd></div>
+            <div><dt>Keywords</dt><dd>LLM-as-Judge, Human Evaluation, Cohen's Kappa, Rubric Evaluation</dd></div>
+          </dl>
+
+          <section class="report-summary" aria-labelledby="summary-title">
+            <h2 id="summary-title">요약</h2>
+            <p>
+              Claude Code로 개발한 논문 요약 시스템의 한국어 요약 결과를 대상으로, 사람 평가와 LLM-as-Judge 평가가 얼마나 일치하는지 분석했습니다. arXiv 논문 10편의 초록 기반 요약을 기준 없는 평가, criteria 기반 평가, rubric 기반 평가로 채점하고 Cohen's kappa와 quadratic weighted kappa로 평가자 간 일치도를 측정했습니다.
+            </p>
+          </section>
+        </header>
+
+        <div class="report-body">
+          <aside class="report-toc" aria-label="Report table of contents">
+            <strong>Contents</strong>
+            <a href="#intro">1. 서론</a>
+            <a href="#target">2. 평가 대상과 질문</a>
+            <a href="#dataset">3. 평가 데이터</a>
+            <a href="#method">4. 평가 방식</a>
+            <a href="#results">5. 평가 결과</a>
+            <a href="#analysis">6. 결과 분석</a>
+            <a href="#limitations">7. 한계와 결론</a>
+          </aside>
+
+          <div class="report-content">
+            <section class="report-section" id="intro">
+              <h2>1. 서론</h2>
+              <p>
+                LLM은 논문 요약, 질의응답, 코드 생성, 에이전트 작업처럼 정답이 하나로 고정되지 않는 생성 과제에 널리 사용됩니다. 하지만 open-ended generation은 accuracy나 exact match만으로 품질을 판단하기 어렵습니다. 좋은 요약인지 판단하려면 정확성, 충실성, 유용성, 자연스러운 표현, 형식 준수 여부를 함께 봐야 합니다.
+              </p>
+              <p>
+                이 프로젝트는 "좋은 요약"이라는 추상적인 품질 개념을 평가 기준과 점수 anchor로 구체화하고, 사람 평가와 LLM-as-Judge가 같은 방향으로 판단하는지 확인하는 데 초점을 맞췄습니다. 단순 평균 점수보다 평가 기준, rubric, 불일치 사례, weighted kappa를 함께 제시하는 방식이 더 설명력 있는 평가라고 보았습니다.
+              </p>
+            </section>
+
+            <section class="report-section" id="target">
+              <h2>2. 평가 대상과 연구 질문</h2>
+              <p>
+                평가 대상은 Claude Code로 만든 논문 요약 시스템입니다. 시스템은 논문 title과 abstract를 입력으로 받아 한국어 5섹션 요약을 생성합니다. 이 출력은 closed-form answer가 아니므로 문자열 일치나 ROUGE만으로는 과제 목적에 맞는 평가가 어렵다고 판단했습니다.
+              </p>
+
+              <h3>2.1 요약 형식</h3>
+              <ul class="report-label-list">
+                <li><strong>핵심 기여:</strong> 논문이 해결하려는 문제와 새롭게 제안한 내용</li>
+                <li><strong>방법론:</strong> 사용한 모델, 실험 설계, 접근 방식</li>
+                <li><strong>결과:</strong> abstract에서 확인 가능한 주요 성능과 관찰</li>
+                <li><strong>한계:</strong> 요약 가능한 범위 안에서 드러나는 제한점</li>
+                <li><strong>키워드:</strong> 논문을 다시 찾기 위한 핵심 주제어</li>
+              </ul>
+
+              <h3>2.2 연구 질문</h3>
+              <ul class="report-label-list">
+                <li>기준 없는 1~5점 평가에서는 사람과 LLM-as-Judge가 얼마나 일치하는가?</li>
+                <li>평가 기준을 제시하면 일치도가 높아지는가?</li>
+                <li>점수별 anchor가 있는 rubric은 LLM 판단을 사람 평가에 더 가깝게 만드는가?</li>
+                <li>일반 Cohen's kappa와 quadratic weighted kappa는 어떤 차이를 보이는가?</li>
+                <li>불일치가 발생한 케이스는 어떤 품질 속성에서 차이가 났는가?</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="dataset">
+              <h2>3. 평가 데이터</h2>
+              <p>
+                평가 케이스는 arXiv API 기반 논문 10편으로 구성했습니다. 각 케이스는 <code>P01</code>부터 <code>P10</code>까지의 <code>case_id</code>를 가지며, arXiv ID, 제목, 매칭 키워드, abstract는 <code>data/papers_sample.csv</code>에 저장했습니다.
+              </p>
+              <p>
+                논문 주제는 LLM transparency, MoE calibration, Bayesian in-context learning, on-device LLM serving, tool-calling agent, MLLM bias, SAR multimodal dataset, multilingual code benchmark, coding agent guidance, safety-aligned LLM 등으로 다양하게 구성했습니다.
+              </p>
+              <p>
+                생성된 한국어 요약은 <code>data/generated_outputs.csv</code>에 저장했고, 평가는 abstract에 근거한 요약 품질만 보도록 제한했습니다. 논문 본문을 읽어야만 알 수 있는 정보는 평가 기준에서 제외했습니다.
+              </p>
+            </section>
+
+            <section class="report-section" id="method">
+              <h2>4. 평가 방식</h2>
+              <h3>4.1 Human Evaluation</h3>
+              <p>
+                사람 평가는 LLM-as-Judge 결과를 보기 전에 먼저 수행했습니다. 이는 사람 점수가 LLM 평가에 영향을 받는 것을 막기 위한 순서입니다. 사람 점수와 간단한 판단 근거는 <code>data/human_ratings.csv</code>에 기록했습니다.
+              </p>
+
+              <h3>4.2 LLM-as-Judge Evaluation</h3>
+              <p>
+                LLM-as-Judge 평가는 ChatGPT 기반 GPT-5 계열 모델로 수행했습니다. 입력에는 논문 제목, abstract, 생성된 한국어 요약만 포함했고, 사람 평가 점수는 넣지 않았습니다. 출력은 1~5점 정수 점수와 짧은 rationale로 제한했으며, 결과는 <code>data/llm_judge_ratings.csv</code>에 저장했습니다.
+              </p>
+
+              <h3>4.3 Evaluation Conditions</h3>
+              <ul class="report-label-list">
+                <li><strong>No rubric:</strong> "전반적으로 얼마나 좋은가"만 보고 1~5점을 부여하는 직관적 평가입니다.</li>
+                <li><strong>Criteria:</strong> 정확성, 완성도, 유용성, 한국어 자연스러움, 형식 준수를 함께 고려해 하나의 최종 점수를 부여합니다.</li>
+                <li><strong>Rubric:</strong> 1점부터 5점까지 점수별 anchor를 명시해 평가자가 같은 품질 기준을 보도록 설계했습니다.</li>
+              </ul>
+
+              <figure class="report-figure">
+                <img src="assets/claude-code-eval-kappa/image1.png" alt="Cohen's kappa agreement result summary" loading="lazy" />
+                <figcaption>Table 1. 평가 조건별 kappa 결과 요약</figcaption>
+              </figure>
+            </section>
+
+            <section class="report-section" id="results">
+              <h2>5. 평가 결과</h2>
+              <p>
+                기준 없는 평가는 정확 일치율 0.40, 일반 kappa 0.0000으로 가장 낮았습니다. 사람 평가자는 읽기 쉽고 핵심이 잡히면 높은 점수를 주는 경향이 있었지만, LLM-as-Judge는 한계 섹션의 부실함이나 기술적 구체성 부족을 더 적극적으로 감점했습니다.
+              </p>
+              <p>
+                기준 기반 평가와 rubric 기반 평가는 정확 일치율 0.60, 일반 kappa 0.3333으로 상승했습니다. 평가 기준을 명시하자 두 평가자가 같은 항목을 보게 되었고, 특히 형식 준수와 정확성에 대한 판단은 더 안정적으로 맞았습니다. 다만 4점과 5점, 3점과 4점의 경계에서는 여전히 차이가 남았습니다.
+              </p>
+
+              <h3>5.1 Kappa 계산</h3>
+              <p>
+                사람 점수와 LLM 점수는 <code>data/final_evaluation_dataset.csv</code>로 결합하고, <code>scripts/calculate_kappa.py</code>에서 <code>sklearn.metrics.cohen_kappa_score</code>로 계산했습니다. sklearn이 없는 환경에서도 재현할 수 있도록 수동 계산 fallback을 포함했습니다.
+              </p>
+              <p>
+                1~5점은 순서형 척도이므로 일반 kappa와 <code>weights="quadratic"</code>을 적용한 weighted kappa를 함께 보고했습니다. Weighted kappa는 인접한 점수 차이는 작게 반영하고, 멀리 떨어진 점수 차이는 더 크게 반영합니다.
+              </p>
+            </section>
+
+            <section class="report-section" id="analysis">
+              <h2>6. 결과 분석</h2>
+              <p>
+                모든 불일치는 1점 차이에 머물렀습니다. 그래서 일반 kappa보다 quadratic weighted kappa가 높게 나타났습니다. Criteria와 rubric의 weighted kappa는 0.5556으로, unweighted kappa 0.3333보다 높았습니다. No rubric도 unweighted kappa는 0.0000이지만 weighted kappa는 0.3333이었습니다.
+              </p>
+              <p>
+                이는 사람과 LLM이 완전히 반대 방향으로 판단한 것이 아니라, 대체로 같은 방향으로 보되 LLM이 한 단계 더 보수적으로 점수를 준 경우가 많다는 뜻입니다. 따라서 1~5점 평가에서는 일반 kappa만 볼 것이 아니라 weighted kappa를 함께 봐야 평가자 간 차이의 실제 크기를 더 정확히 해석할 수 있습니다.
+              </p>
+
+              <h3>6.1 불일치 사례</h3>
+              <ul class="report-label-list">
+                <li><strong>P03 Bayesian In-Context Learning:</strong> 사람은 핵심 아이디어와 결과가 전달된다고 보았지만, LLM은 새로운 prior에 적응하는 방식 설명이 부족하다고 판단했습니다.</li>
+                <li><strong>P06 StylisticBias:</strong> 사람은 데이터 규모와 주요 결과가 잘 정리됐다고 보았고, LLM은 한계 부분이 짧고 구체적이지 않다고 감점했습니다.</li>
+                <li><strong>P07 SARLO-80:</strong> 사람은 데이터셋 규모와 구성을 긍정적으로 봤지만, LLM은 SAR 데이터의 특징과 평가 활용 설명이 더 필요하다고 보았습니다.</li>
+                <li><strong>P10 Safety-Aligned LLMs:</strong> 사람은 실험 구성과 결론이 충분하다고 봤고, LLM은 거절 응답과 문맥 처리 설명이 더 필요하다고 평가했습니다.</li>
+              </ul>
+            </section>
+
+            <section class="report-section" id="limitations">
+              <h2>7. 한계와 결론</h2>
+              <p>
+                평가 케이스가 10개로 제한되어 있어 더 안정적인 kappa를 얻으려면 논문 주제별로 더 많은 케이스를 수집해야 합니다. 또한 현재 평가는 단일 LLM judge 기준이므로, 향후 여러 judge 모델이나 pairwise preference 평가를 추가하면 절대 점수의 anchor drift를 줄일 수 있습니다.
+              </p>
+              <p>
+                가장 중요한 관찰은 LLM-as-Judge가 사람보다 기술적 완성도와 한계 서술을 더 엄격하게 본다는 점입니다. 사람은 실사용 관점에서 요약이 읽기 쉽고 핵심을 전달하면 높은 점수를 주었지만, LLM은 abstract의 세부 조건과 limitation이 충분히 반영되지 않으면 감점했습니다.
+              </p>
+              <p>
+                결론적으로 open-ended 생성 시스템을 평가할 때는 단순 평균 점수보다 평가 기준, rubric, 불일치 사례, weighted kappa를 함께 제시하는 것이 더 설득력 있습니다.
+              </p>
+            </section>
+
+            <section class="report-section" id="references">
+              <h2>References</h2>
+              <ol class="references-list">
+                <li>Zheng et al. (2023), "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena".</li>
+                <li>Cohen (1960), "A Coefficient of Agreement for Nominal Scales".</li>
+                <li>Cohen (1968), "Weighted Kappa: Nominal Scale Agreement with Provision for Scaled Disagreement or Partial Credit".</li>
+              </ol>
+            </section>
+
+            <div class="report-links">
+              <a class="button primary" href="https://github.com/192cm/claude-code-eval-kappa">Repository</a>
+              <a class="button secondary" href="../index.html#projects">Back to projects</a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>
