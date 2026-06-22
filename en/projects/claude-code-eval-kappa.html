@@ -30,12 +30,20 @@
 
           <dl class="report-meta">
             <div>
-              <dt>???</dt>
-              <dd>이름: 장건호<br />학과: 정보컴퓨터공학부<br />학번: 202255597</dd>
+              <dt>Name</dt>
+              <dd>Kunho Jang</dd>
+            </div>
+            <div>
+              <dt>Department</dt>
+              <dd>School of Computer Science and Engineering</dd>
+            </div>
+            <div>
+              <dt>Student ID</dt>
+              <dd>202255597</dd>
             </div>
             <div>
               <dt>Keywords</dt>
-              <dd>Keywords: LLM-as-Judge, Human Evaluation, Cohen&#x27;s Kappa, Rubric Evaluation</dd>
+              <dd>LLM-as-Judge, Human Evaluation, Cohen&#x27;s Kappa, Rubric Evaluation</dd>
             </div>
           </dl>
 
@@ -72,19 +80,23 @@
               <h3>2.1 평가 대상 (Evaluation Target)</h3>
               <p>평가 대상은 `target_project/arxiv-tracker`에 포함된 논문 요약 시스템이다. 시스템의 핵심 출력은 논문 title과 abstract를 입력으로 받아 생성하는 한국어 5섹션 요약이다.</p>
               <p>요약 형식은 다음과 같다.</p>
-              <p>핵심 기여</p>
-              <p>방법론</p>
-              <p>결과</p>
-              <p>한계</p>
-              <p>키워드</p>
+              <ol class="references-list">
+                <li>핵심 기여</li>
+                <li>방법론</li>
+                <li>결과</li>
+                <li>한계</li>
+                <li>키워드</li>
+              </ol>
               <p>평가 관점에서 중요한 점은 이 출력이 closed-form answer가 아니라는 것이다. 같은 abstract를 읽더라도 좋은 요약의 기준은 정확성, 완성도, 읽기 쉬움, 형식 준수, 한계 서술의 충실성 등 여러 속성으로 나뉜다. 따라서 단순 문자열 일치나 ROUGE만으로는 과제 목적에 맞는 평가가 어렵다고 판단했다.</p>
               <h3>2.2 연구 질문 (Research Questions)</h3>
               <p>본 프로젝트는 다음 질문에 답하도록 설계했다.</p>
-              <p>기준 없는 1~5점 평가에서는 사람과 LLM-as-Judge가 얼마나 일치하는가?</p>
-              <p>평가 기준을 제시하면 일치도가 높아지는가?</p>
-              <p>점수별 anchor가 있는 rubric을 사용하면 LLM-as-Judge의 판단이 사람 평가와 더 가까워지는가?</p>
-              <p>일반 Cohen&#x27;s kappa와 quadratic weighted kappa는 어떤 차이를 보이는가?</p>
-              <p>불일치가 발생한 케이스는 어떤 품질 속성에서 차이가 났는가?</p>
+              <ol class="references-list">
+                <li>기준 없는 1~5점 평가에서는 사람과 LLM-as-Judge가 얼마나 일치하는가?</li>
+                <li>평가 기준을 제시하면 일치도가 높아지는가?</li>
+                <li>점수별 anchor가 있는 rubric을 사용하면 LLM-as-Judge의 판단이 사람 평가와 더 가까워지는가?</li>
+                <li>일반 Cohen&#x27;s kappa와 quadratic weighted kappa는 어떤 차이를 보이는가?</li>
+                <li>불일치가 발생한 케이스는 어떤 품질 속성에서 차이가 났는가?</li>
+              </ol>
             </section>
             <section class="report-section" id="3.-평가-데이터-(evaluation-dataset)">
               <h2>3. 평가 데이터 (Evaluation Dataset)</h2>
@@ -105,13 +117,15 @@
               <p>첫째, 기준 없는 평가(no_rubric)는 &quot;전반적으로 얼마나 좋은가&quot;만 보고 1~5점을 부여했다. 이 방식은 실제 사용자의 직관적 평가에 가깝지만, 점수 의미가 평가자마다 흔들릴 수 있다.</p>
               <p>둘째, 기준 기반 평가(criteria)는 정확성, 완성도, 유용성, 한국어 자연스러움, 형식 준수를 함께 고려해 하나의 최종 점수를 부여했다. 이는 rubric보다 단순하지만, 평가자가 무엇을 봐야 하는지 명확히 한다.</p>
               <p>셋째, rubric 기반 평가(rubric)는 점수별 anchor를 명시했다.</p>
-              <p>The summary is mostly wrong, unrelated, or misses almost all important content.</p>
-              <p>The summary is partly related but omits important points or contains notable misunderstanding.</p>
-              <p>The summary is mostly correct but vague, incomplete, or weakly structured.</p>
-              <p>The summary is accurate and useful, with only minor omissions or lack of detail.</p>
-              <p>The summary is accurate, complete, concise, naturally written in Korean, and clearly organized into the required five sections.</p>
+              <ol class="references-list">
+                <li>The summary is mostly wrong, unrelated, or misses almost all important content.</li>
+                <li>The summary is partly related but omits important points or contains notable misunderstanding.</li>
+                <li>The summary is mostly correct but vague, incomplete, or weakly structured.</li>
+                <li>The summary is accurate and useful, with only minor omissions or lack of detail.</li>
+                <li>The summary is accurate, complete, concise, naturally written in Korean, and clearly organized into the required five sections.</li>
+              </ol>
               <figure class="report-figure">
-                <img src="../../projects/assets/claude-code-eval-kappa/image1.png" alt="?? ??? kappa ?? ?" loading="lazy" />
+                <img src="../../projects/assets/claude-code-eval-kappa/image1.png" alt="Kappa result table by evaluation condition" loading="lazy" />
               </figure>
             </section>
             <section class="report-section" id="5.-일치도-계산-(agreement-measurement)">
