@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Kunho's study notes on AI papers, RAG, LLMs, generative models, and deep learning foundations."
+    />
+    <title>Study Notes | Kunho</title>
+    <link rel="stylesheet" href="../../styles.css?v=20260531-notes" />
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#design">Design</a>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#notes">Engine</a>
+          <a href="../index.html#awards">Proof</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector">
+          <a href="../../notes/index.html" hreflang="ko">KO</a>
+          <span class="active" aria-current="page">EN</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="report-article project-archive">
+        <header class="report-hero">
+          <p class="report-kicker">Study Notes</p>
+          <h1>AI paper notes</h1>
+          <p class="project-lead">
+            A curated view of AI papers and technical reports from my Notion notes.
+            RAG and LLM systems stay upfront, while recommender systems and deep
+            learning classics are grouped as supporting foundations.
+          </p>
+        </header>
+
+        <section class="report-section" aria-labelledby="notes-index-title">
+          <h2 id="notes-index-title">Topics</h2>
+
+          <div class="note-list">
+            <section class="note-group" id="rag" aria-labelledby="rag-title">
+              <div>
+                <h2 id="rag-title">RAG</h2>
+                <p>Retrieval quality, graph structure, and long-context limits.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>LightRAG: Simple and Fast Retrieval-Augmented Generation</strong>
+                  <span>GraphRAG cost, dual-level retrieval, and incremental updates</span>
+                </article>
+                <article class="note-item">
+                  <strong>Lost in the Middle</strong>
+                  <span>Why models miss information placed in the middle of long context</span>
+                </article>
+                <article class="note-item">
+                  <strong>A Graph RAG Approach to Query-Focused Summarization</strong>
+                  <span>Graph-based summarization over global document structure</span>
+                </article>
+                <article class="note-item">
+                  <strong>Engineering RAG Systems for Real-World Applications</strong>
+                  <span>Evaluation and operational concerns for production RAG</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="note-group" id="llm" aria-labelledby="llm-title">
+              <div>
+                <h2 id="llm-title">LLM</h2>
+                <p>Transformer structure, long-context behavior, and inference stability.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>Attention Is All You Need</strong>
+                  <span>The Transformer core and how modern LLM stacks evolved from it</span>
+                </article>
+                <article class="note-item">
+                  <strong>Context Rot: How Increasing Input Tokens Impacts LLM Performance</strong>
+                  <span>How longer input can reduce reliability and reasoning quality</span>
+                </article>
+                <article class="note-item">
+                  <strong>Defeating Nondeterminism in LLM Inference</strong>
+                  <span>Reproducibility and nondeterminism in LLM inference</span>
+                </article>
+                <article class="note-item">
+                  <strong>Small Language Models are the Future of Agentic AI</strong>
+                  <span>Why smaller models can matter in agent workflows</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="note-group" id="generative" aria-labelledby="generative-title">
+              <div>
+                <h2 id="generative-title">Generative Models</h2>
+                <p>Image generation, diffusion, and visual understanding papers.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>Diffusion Models Beat GANs on Image Synthesis</strong>
+                  <span>Why diffusion models became strong image synthesis baselines</span>
+                </article>
+                <article class="note-item">
+                  <strong>MIRAGE: The Illusion of Visual Understanding</strong>
+                  <span>Limits and evaluation questions for vision-language models</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="note-group" id="foundations" aria-labelledby="foundations-title">
+              <div>
+                <h2 id="foundations-title">Foundations</h2>
+                <p>Classic deep learning papers connected back to modern model design.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>ImageNet Classification with Deep Convolutional Neural Networks</strong>
+                  <span>AlexNet and the start of large-scale image classification</span>
+                </article>
+                <article class="note-item">
+                  <strong>Batch Normalization</strong>
+                  <span>Training stability and normalization in deep networks</span>
+                </article>
+                <article class="note-item">
+                  <strong>Deep Residual Learning for Image Recognition</strong>
+                  <span>How residual connections changed deep model training</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="note-group" id="recsys" aria-labelledby="recsys-title">
+              <div>
+                <h2 id="recsys-title">Recommender Systems</h2>
+                <p>Recommendation models through retrieval, ranking, and personalization.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>Deep Neural Networks for YouTube Recommendations</strong>
+                  <span>Candidate generation and ranking in large-scale recommendation</span>
+                </article>
+                <article class="note-item">
+                  <strong>Deep Learning based Recommender System: A Survey</strong>
+                  <span>Major architectures and research directions in deep recommender systems</span>
+                </article>
+                <article class="note-item">
+                  <strong>Dynamic Multi-Behavior Sequence Modeling for Next Item Recommendation</strong>
+                  <span>Using multi-behavior sequences for next item recommendation</span>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <div class="report-links">
+            <a class="button secondary" href="../index.html#notes">Back to home</a>
+          </div>
+        </section>
+      </article>
+    </main>
+
+    <script src="../../script.js?v=20260529-6"></script>
+  </body>
+</html>

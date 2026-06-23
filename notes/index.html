@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Kunho가 읽고 정리한 AI 논문, RAG, LLM, 생성 모델, 딥러닝 기반 노트 목록입니다."
+    />
+    <title>Study Notes | Kunho</title>
+    <link rel="stylesheet" href="../styles.css?v=20260531-notes" />
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#design">Design</a>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#notes">Engine</a>
+          <a href="../index.html#awards">Proof</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector">
+          <span class="active" aria-current="page">KO</span>
+          <a href="../en/notes/index.html" hreflang="en">EN</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="report-article project-archive">
+        <header class="report-hero">
+          <p class="report-kicker">Study Notes</p>
+          <h1>AI 논문 노트</h1>
+          <p class="project-lead">
+            Notion에 정리해 둔 AI 논문과 기술 리포트를 포트폴리오에서 읽기 쉬운
+            주제 단위로 묶었습니다. 먼저 RAG와 LLM을 전면에 두고, 추천시스템과
+            딥러닝 기반 논문은 기반 지식으로 분리했습니다.
+          </p>
+        </header>
+
+        <section class="report-section" aria-labelledby="notes-index-title">
+          <h2 id="notes-index-title">Topics</h2>
+
+          <div class="note-list">
+            <section class="note-group" id="rag" aria-labelledby="rag-title">
+              <div>
+                <h2 id="rag-title">RAG</h2>
+                <p>검색 품질, 그래프 구조, 긴 컨텍스트 한계를 시스템 관점에서 봅니다.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>LightRAG: Simple and Fast Retrieval-Augmented Generation</strong>
+                  <span>GraphRAG의 비용 문제, 이중 수준 검색, 점진적 업데이트</span>
+                </article>
+                <article class="note-item">
+                  <strong>Lost in the Middle</strong>
+                  <span>긴 문맥에서 중간 정보가 사라지는 위치 편향 문제</span>
+                </article>
+                <article class="note-item">
+                  <strong>A Graph RAG Approach to Query-Focused Summarization</strong>
+                  <span>문서 전역 구조를 활용하는 그래프 기반 요약</span>
+                </article>
+                <article class="note-item">
+                  <strong>Engineering RAG Systems for Real-World Applications</strong>
+                  <span>실서비스 RAG 설계에서 필요한 평가와 운영 관점</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="note-group" id="llm" aria-labelledby="llm-title">
+              <div>
+                <h2 id="llm-title">LLM</h2>
+                <p>Transformer 구조, 장문맥 처리, 추론 안정성 문제를 정리합니다.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>Attention Is All You Need</strong>
+                  <span>Transformer의 핵심 구조와 현대 LLM 아키텍처로 이어진 변화</span>
+                </article>
+                <article class="note-item">
+                  <strong>Context Rot: How Increasing Input Tokens Impacts LLM Performance</strong>
+                  <span>입력 토큰 증가가 성능과 신뢰성에 미치는 영향</span>
+                </article>
+                <article class="note-item">
+                  <strong>Defeating Nondeterminism in LLM Inference</strong>
+                  <span>LLM 추론 결과의 재현성과 비결정성 문제</span>
+                </article>
+                <article class="note-item">
+                  <strong>Small Language Models are the Future of Agentic AI</strong>
+                  <span>에이전트 시스템에서 작은 언어 모델이 갖는 장점</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="note-group" id="generative" aria-labelledby="generative-title">
+              <div>
+                <h2 id="generative-title">Generative Models</h2>
+                <p>이미지 생성, diffusion, 시각 이해 모델을 프로젝트와 연결합니다.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>Diffusion Models Beat GANs on Image Synthesis</strong>
+                  <span>Diffusion 모델이 이미지 합성에서 보인 강점과 실험 구조</span>
+                </article>
+                <article class="note-item">
+                  <strong>MIRAGE: The Illusion of Visual Understanding</strong>
+                  <span>비전-언어 모델의 시각 이해 한계와 평가 관점</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="note-group" id="foundations" aria-labelledby="foundations-title">
+              <div>
+                <h2 id="foundations-title">Foundations</h2>
+                <p>오래 남은 딥러닝 기본 논문을 현재 모델 설계와 연결해 읽습니다.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>ImageNet Classification with Deep Convolutional Neural Networks</strong>
+                  <span>AlexNet과 대규모 이미지 분류 학습의 출발점</span>
+                </article>
+                <article class="note-item">
+                  <strong>Batch Normalization</strong>
+                  <span>학습 안정화와 정규화가 깊은 네트워크에 미친 영향</span>
+                </article>
+                <article class="note-item">
+                  <strong>Deep Residual Learning for Image Recognition</strong>
+                  <span>Residual connection이 깊은 모델 학습을 바꾼 방식</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="note-group" id="recsys" aria-labelledby="recsys-title">
+              <div>
+                <h2 id="recsys-title">Recommender Systems</h2>
+                <p>추천 모델을 retrieval, ranking, personalization 관점으로 정리합니다.</p>
+              </div>
+              <div class="note-items">
+                <article class="note-item">
+                  <strong>Deep Neural Networks for YouTube Recommendations</strong>
+                  <span>대규모 추천 시스템의 candidate generation과 ranking 구조</span>
+                </article>
+                <article class="note-item">
+                  <strong>Deep Learning based Recommender System: A Survey</strong>
+                  <span>딥러닝 추천 시스템의 주요 구조와 연구 흐름</span>
+                </article>
+                <article class="note-item">
+                  <strong>Dynamic Multi-Behavior Sequence Modeling for Next Item Recommendation</strong>
+                  <span>다중 행동 시퀀스를 활용한 다음 아이템 추천</span>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <div class="report-links">
+            <a class="button secondary" href="../index.html#notes">홈으로 돌아가기</a>
+          </div>
+        </section>
+      </article>
+    </main>
+
+    <script src="../script.js?v=20260529-6"></script>
+  </body>
+</html>

@@ -7,7 +7,7 @@
       name="description"
       content="AI Researcher를 지향하는 Kunho를 하나의 제품처럼 소개하는 개인 포트폴리오입니다."
     />
-    <title>Kunho | AI Researcher Portfolio</title>
+    <title>Kunho Portfolio</title>
     <link rel="stylesheet" href="styles.css?v=20260530-1" />
   </head>
   <body>
@@ -17,6 +17,8 @@
         <nav>
           <a href="#design">Design</a>
           <a href="#projects">Projects</a>
+          <a href="#notes">Engine</a>
+          <a href="#awards">Proof</a>
           <a href="#specs">Specs</a>
         </nav>
         <div class="language-switch" aria-label="Language selector">
@@ -36,7 +38,11 @@
             이해하고, 실행하는 방법을 실험합니다.
           </p>
           <div class="hero-actions" aria-label="Primary links">
-            <a class="button primary" href="mailto:kyle080405@gmail.com"
+            <a
+              class="button primary"
+              href="mailto:kyle080405@gmail.com"
+              data-copy-email="kyle080405@gmail.com"
+              aria-label="Copy email address"
               >Contact</a
             >
             <a class="button secondary" href="https://github.com/192cm"
@@ -117,7 +123,9 @@
             aria-label="Customizing LoRA for Diffusion Models 프로젝트 페이지로 이동"
           >
             <p>Customizing LoRA</p>
-            <h3>Stable Diffusion을 LoRA로 스타일 적응시키고 실험 조건을 비교.</h3>
+            <h3>
+              Stable Diffusion을 LoRA로 스타일 적응시키고 실험 조건을 비교.
+            </h3>
             <span>LoRA · Stable Diffusion · Diffusers · PEFT</span>
             <strong class="project-card-cta">자세히 보기</strong>
           </a>
@@ -144,7 +152,88 @@
         </div>
 
         <div class="project-more reveal">
-          <a class="button secondary" href="projects/index.html">전체 프로젝트 보기</a>
+          <a class="button secondary" href="projects/index.html"
+            >전체 프로젝트 보기</a
+          >
+        </div>
+      </section>
+
+      <section class="section" id="notes" aria-labelledby="notes-title">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Core Intelligence</p>
+          <h2 id="notes-title">지식 저장소.</h2>
+        </div>
+
+        <div class="project-grid">
+          <a
+            class="project-card note-card reveal"
+            href="notes/index.html#rag"
+            aria-label="RAG 논문 노트 목록으로 이동"
+          >
+            <p>RAG</p>
+            <h3>
+              검색 증강 생성 시스템의 검색, 그래프, 컨텍스트 설계를 정리합니다.
+            </h3>
+            <span>LightRAG - GraphRAG - Lost in the Middle</span>
+            <strong class="project-card-cta">노트 보기</strong>
+          </a>
+          <a
+            class="project-card note-card reveal"
+            href="notes/index.html#llm"
+            aria-label="LLM 논문 노트 목록으로 이동"
+          >
+            <p>LLM</p>
+            <h3>
+              Transformer부터 긴 컨텍스트와 추론 안정성까지 흐름을 따라갑니다.
+            </h3>
+            <span>Attention - Context Rot - Nondeterminism</span>
+            <strong class="project-card-cta">노트 보기</strong>
+          </a>
+          <a
+            class="project-card note-card reveal"
+            href="notes/index.html#generative"
+            aria-label="생성 모델 논문 노트 목록으로 이동"
+          >
+            <p>Generative Models</p>
+            <h3>이미지 생성과 모델 적응 실험에 연결되는 논문들을 모읍니다.</h3>
+            <span>Diffusion - Vision-Language - LoRA</span>
+            <strong class="project-card-cta">노트 보기</strong>
+          </a>
+          <a
+            class="project-card note-card reveal"
+            href="notes/index.html#foundations"
+            aria-label="딥러닝 기반 논문 노트 목록으로 이동"
+          >
+            <p>Foundations</p>
+            <h3>
+              CNN, 정규화, 잔차 연결처럼 오래 남는 기본 논문을 정리합니다.
+            </h3>
+            <span>AlexNet - BatchNorm - ResNet</span>
+            <strong class="project-card-cta">노트 보기</strong>
+          </a>
+        </div>
+
+        <div class="project-more reveal">
+          <a class="button secondary" href="notes/index.html">전체 노트 보기</a>
+        </div>
+      </section>
+
+      <section class="section" id="awards" aria-labelledby="awards-title">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Proof points</p>
+          <h2 id="awards-title">수상 경력.</h2>
+        </div>
+
+        <div class="award-list reveal">
+          <article class="award-item">
+            <div>
+              <p>2024 Millitary AI Contest</p>
+              <h3>
+                <a href="https://maicon.kr">2024 국방 AI 경진대회</a>
+              </h3>
+            </div>
+            <span>정보통신기획평가원 원장상</span>
+          </article>
         </div>
       </section>
 
