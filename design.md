@@ -103,7 +103,7 @@ Color rules:
 
 - 어두운 feature 섹션은 기술적 깊이와 코어 아키텍처를 보여준다.
 - 밝은 feature 섹션은 개인적 작업 방식, 기록 습관, 선호하는 구조를 보여준다.
-- `feature-visual`의 타일은 RAG, LLM, Monitoring, AI Agent 같은 핵심 역량을 제품 기능처럼 나열한다.
+- `feature-visual`의 타일은 RAG, LLM, AI Agent, Monitoring 같은 핵심 역량을 제품 기능처럼 나열한다.
 
 ### Project Cards
 
