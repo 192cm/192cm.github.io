@@ -948,6 +948,15 @@ h1 {
   line-height: 1.72;
 }
 
+.spec-list .spec-detail {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
 .spec-list dd a {
   margin-right: 18px;
   color: var(--blue);
