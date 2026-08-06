@@ -962,6 +962,11 @@ h1 {
   color: var(--blue);
 }
 
+.spec-list dd a.spec-education-link {
+  margin-right: 0;
+  color: inherit;
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(28px);
