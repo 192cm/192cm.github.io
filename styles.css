@@ -748,6 +748,7 @@ h1 {
 }
 
 .project-section code,
+.report-summary code,
 .report-section code {
   display: inline-block;
   max-width: 100%;
@@ -823,8 +824,23 @@ h1 {
   border-bottom: 0;
 }
 
+.report-table .metric-drop {
+  color: #d70015;
+}
+
 .report-section p {
   margin-bottom: 16px;
+}
+
+.report-equation {
+  margin: 26px 0;
+  overflow-x: auto;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #1d1d1f;
+  text-align: center;
 }
 
 .project-archive .project-card p {

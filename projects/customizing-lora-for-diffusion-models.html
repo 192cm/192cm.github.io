@@ -97,7 +97,7 @@
               <h2>2. 작업 정의 (Task Formulation)</h2>
 
               <h3>2.1 전체 파이프라인 구조</h3>
-              <ul class="report-label-list">
+              <ul>
                 <li><strong>Dataset Collection:</strong> 웹 크롤링 이미지, 생성 이미지, 실제 촬영 이미지로 구성된 custom dataset을 구축한다.</li>
                 <li><strong>Image Captioning:</strong> BLIP 기반 captioning 모델을 사용하여 각 이미지에 대응되는 텍스트 설명을 자동 생성하고 caption metadata로 정리한다.</li>
                 <li><strong>Dataset Formatting:</strong> 이미지와 caption을 Hugging Face <code>imagefolder</code> 형식에 맞게 정리하고 <code>metadata.csv</code>를 구성한다.</li>
@@ -124,11 +124,34 @@
                 함께 구성하여 Hugging Face <code>imagefolder</code> 형식으로
                 불러올 수 있도록 정리하였다.
               </p>
-              <ul class="report-label-list">
-                <li><strong>Dataset A - Web Crawled Images:</strong> 웹에서 수집한 pixel art 계열 이미지로 구성하여 웹 이미지 기반 스타일 특징을 얼마나 반영할 수 있는지 확인하였다.</li>
-                <li><strong>Dataset B - Generated Images:</strong> paper craft 또는 paper cutout 계열의 스타일을 의도했으며, 집, 꽃밭, 동물, 풍경 등 다양한 object를 포함한다.</li>
-                <li><strong>Dataset C - Real Images:</strong> 눈이 내린 거리, 건물, 야외 풍경 등 현실 이미지의 질감과 조명 조건을 포함한다.</li>
-              </ul>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>데이터셋</th>
+                      <th>유형</th>
+                      <th>구성 및 목적</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Dataset A</strong></td>
+                      <td>Web Crawled Images</td>
+                      <td>웹에서 수집한 pixel art 계열 이미지로 구성하여 웹 이미지 기반 스타일 특징을 얼마나 반영할 수 있는지 확인하였다.</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Dataset B</strong></td>
+                      <td>Generated Images</td>
+                      <td>paper craft 또는 paper cutout 계열의 스타일을 의도했으며, 집, 꽃밭, 동물, 풍경 등 다양한 object를 포함한다.</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Dataset C</strong></td>
+                      <td>Real Images</td>
+                      <td>눈이 내린 거리, 건물, 야외 풍경 등 현실 이미지의 질감과 조명 조건을 포함한다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
               <h3>2.3 Captioning 및 Metadata 구성</h3>
               <p>
@@ -161,14 +184,34 @@
                 결과가 어떻게 달라지는지 비교하기 위해 사용하였다.
               </p>
 
-              <figure class="report-figure">
-                <img
-                  src="assets/customizing-lora-for-diffusion-models/image18.png"
-                  alt="LoRA 학습 데이터셋 구성 표"
-                  loading="lazy"
-                />
-                <figcaption>Table 1. Data Configuration</figcaption>
-              </figure>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>Dataset</th>
+                      <th>Source</th>
+                      <th>Number of Images</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><code>web_crawled_custom_dataset</code></td>
+                      <td>Web-crawled images</td>
+                      <td>50</td>
+                    </tr>
+                    <tr>
+                      <td><code>generated_custom_dataset</code></td>
+                      <td>AI-generated images</td>
+                      <td>20</td>
+                    </tr>
+                    <tr>
+                      <td><code>real_custom_dataset</code></td>
+                      <td>Real photographs</td>
+                      <td>10</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
               <h3>3.2 데이터 전처리</h3>
               <p>
@@ -262,14 +305,39 @@
                 서버에서 수행하였다.
               </p>
 
-              <figure class="report-figure">
-                <img
-                  src="assets/customizing-lora-for-diffusion-models/image12.png"
-                  alt="LoRA 학습 및 이미지 생성 실험 환경"
-                  loading="lazy"
-                />
-                <figcaption>Table 2. Experiment Setup</figcaption>
-              </figure>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>항목 (Category)</th>
+                      <th>상세 내용 (Specifications)</th>
+                      <th>비고 (Remarks)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>GPU</strong></td>
+                      <td>NVIDIA RTX A5000</td>
+                      <td>24GB VRAM × 8, CUDA 12.7</td>
+                    </tr>
+                    <tr>
+                      <td><strong>CPU</strong></td>
+                      <td>AMD EPYC 7643 48-Core Processor</td>
+                      <td>2 sockets, 96 CPUs</td>
+                    </tr>
+                    <tr>
+                      <td><strong>RAM</strong></td>
+                      <td>1.0 TiB</td>
+                      <td>Swap 8.0 GiB</td>
+                    </tr>
+                    <tr>
+                      <td><strong>OS</strong></td>
+                      <td>Ubuntu Linux</td>
+                      <td>Kernel 5.4.0</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
               <h3>5.2 Before/After LoRA 결과 비교</h3>
               <p>
@@ -457,18 +525,58 @@
             <section class="report-section" id="structure">
               <h2>8. 프로젝트 파일 구조</h2>
               <p>프로젝트 루트: <code>Customizing-LoRA-for-Diffusion-Models</code></p>
-              <ul class="report-label-list">
-                <li><strong>00_Customizing_LoRA.ipynb:</strong> 전체 실험 파이프라인 점검용 기본 노트북</li>
-                <li><strong>01_dataset_training.ipynb:</strong> 데이터셋별 LoRA 학습 및 Before/After 비교 이미지 생성</li>
-                <li><strong>02_ablation_rank.ipynb:</strong> rank 변화에 따른 ablation 실험</li>
-                <li><strong>02_ablation_alpha.ipynb:</strong> alpha 변화에 따른 ablation 실험</li>
-                <li><strong>03_test.ipynb:</strong> 학습된 LoRA/체크포인트 로드 후 프롬프트 기반 생성 테스트</li>
-                <li><strong>04_monitor.ipynb:</strong> 학습 진행 상태, 로그, 중간 결과 모니터링</li>
-                <li><strong>experiment_utils.py:</strong> 데이터 전처리, 학습 루프, 추론/비교 이미지 생성 공통 유틸리티</li>
-                <li><strong>environment.yml:</strong> 재현 가능한 실험 환경 정의</li>
-                <li><strong>data/:</strong> 웹 수집 이미지, 생성 이미지, 실제 촬영 이미지 학습 데이터셋</li>
-                <li><strong>lora_experiments/:</strong> 데이터셋별 학습 결과, 비교 이미지, ablation 결과 저장 디렉터리</li>
-              </ul>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>파일·디렉터리</th>
+                      <th>역할</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><code>00_Customizing_LoRA.ipynb</code></td>
+                      <td>전체 실험 파이프라인 점검용 기본 노트북</td>
+                    </tr>
+                    <tr>
+                      <td><code>01_dataset_training.ipynb</code></td>
+                      <td>데이터셋별 LoRA 학습 및 Before/After 비교 이미지 생성</td>
+                    </tr>
+                    <tr>
+                      <td><code>02_ablation_rank.ipynb</code></td>
+                      <td>rank 변화에 따른 ablation 실험</td>
+                    </tr>
+                    <tr>
+                      <td><code>02_ablation_alpha.ipynb</code></td>
+                      <td>alpha 변화에 따른 ablation 실험</td>
+                    </tr>
+                    <tr>
+                      <td><code>03_test.ipynb</code></td>
+                      <td>학습된 LoRA/체크포인트 로드 후 프롬프트 기반 생성 테스트</td>
+                    </tr>
+                    <tr>
+                      <td><code>04_monitor.ipynb</code></td>
+                      <td>학습 진행 상태, 로그, 중간 결과 모니터링</td>
+                    </tr>
+                    <tr>
+                      <td><code>experiment_utils.py</code></td>
+                      <td>데이터 전처리, 학습 루프, 추론/비교 이미지 생성 공통 유틸리티</td>
+                    </tr>
+                    <tr>
+                      <td><code>environment.yml</code></td>
+                      <td>재현 가능한 실험 환경 정의</td>
+                    </tr>
+                    <tr>
+                      <td><code>data/</code></td>
+                      <td>웹 수집 이미지, 생성 이미지, 실제 촬영 이미지 학습 데이터셋</td>
+                    </tr>
+                    <tr>
+                      <td><code>lora_experiments/</code></td>
+                      <td>데이터셋별 학습 결과, 비교 이미지, ablation 결과 저장 디렉터리</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             <section class="report-section" id="references">

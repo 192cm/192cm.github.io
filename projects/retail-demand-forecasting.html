@@ -124,32 +124,65 @@
                 데이터셋을 구조화하였다.
               </p>
               <p>TFT 모델의 입력 구조에 맞춰 변수들을 다음과 같이 세분화하여 정의하였다.</p>
-              <ul class="report-label-list">
-                <li><strong>정적 변수 (Static Covariates):</strong> 시간이 지나도 변하지 않는 속성. 매장 ID, 제품 ID, 카테고리, 지역이 포함된다.</li>
-                <li><strong>미래를 아는 시계열 변수 (Time-varying Known Inputs):</strong> 미래 시점에도 확정된 정보. 날짜, 요일, 주말 여부, 계절성, 프로모션 계획이 포함된다.</li>
-                <li><strong>미래를 모르는 시계열 변수 (Time-varying Unknown Inputs):</strong> 과거 시점까지만 알 수 있는 정보. 실제 수요량, 재고 수준, 판매량, 경쟁사 가격, 날씨, 전염병 여부 등이 포함된다.</li>
-              </ul>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>변수 유형</th>
+                      <th>정의</th>
+                      <th>포함 변수</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>정적 변수 (Static Covariates)</strong></td>
+                      <td>시간이 지나도 변하지 않는 속성.</td>
+                      <td>매장 ID, 제품 ID, 카테고리, 지역이 포함된다.</td>
+                    </tr>
+                    <tr>
+                      <td><strong>미래를 아는 시계열 변수 (Time-varying Known Inputs)</strong></td>
+                      <td>미래 시점에도 확정된 정보.</td>
+                      <td>날짜, 요일, 주말 여부, 계절성, 프로모션 계획이 포함된다.</td>
+                    </tr>
+                    <tr>
+                      <td><strong>미래를 모르는 시계열 변수 (Time-varying Unknown Inputs)</strong></td>
+                      <td>과거 시점까지만 알 수 있는 정보.</td>
+                      <td>실제 수요량, 재고 수준, 판매량, 경쟁사 가격, 날씨, 전염병 여부 등이 포함된다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
               <h3>2.2. 특성 설명</h3>
               <p>데이터 각 특성은 다음과 같다.</p>
-              <ul class="report-label-list">
-                <li><strong>Date:</strong> 데이터가 기록된 날짜.</li>
-                <li><strong>Store ID:</strong> 각 매장을 구별하는 고유 식별 번호.</li>
-                <li><strong>Product ID:</strong> 각 제품을 구별하는 고유 식별 번호.</li>
-                <li><strong>Category:</strong> 제품의 분류. 예: 전자제품, 의류 등.</li>
-                <li><strong>Region:</strong> 매장이 위치한 지리적 구역.</li>
-                <li><strong>Inventory Level:</strong> 현재 창고나 매장에 남아있는 물품의 수량.</li>
-                <li><strong>Units Sold:</strong> 해당 날짜에 실제로 팔린 제품의 수.</li>
-                <li><strong>Units Ordered:</strong> 재고 보충을 위해 주문한 수량.</li>
-                <li><strong>Price:</strong> 제품의 판매 가격.</li>
-                <li><strong>Discount:</strong> 적용된 할인율이나 할인 금액.</li>
-                <li><strong>Weather Condition:</strong> 기록된 날짜의 날씨. 예: 맑음, 비.</li>
-                <li><strong>Promotion:</strong> 판촉 행사 진행 여부.</li>
-                <li><strong>Competitor Pricing:</strong> 경쟁 업체의 유사 제품 가격.</li>
-                <li><strong>Seasonality:</strong> 해당 날짜의 계절.</li>
-                <li><strong>Epidemic:</strong> 전염병 유행 여부.</li>
-                <li><strong>Demand:</strong> 해당 제품의 일일 추정 수요.</li>
-              </ul>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>특성</th>
+                      <th>설명</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><strong>Date</strong></td><td>데이터가 기록된 날짜.</td></tr>
+                    <tr><td><strong>Store ID</strong></td><td>각 매장을 구별하는 고유 식별 번호.</td></tr>
+                    <tr><td><strong>Product ID</strong></td><td>각 제품을 구별하는 고유 식별 번호.</td></tr>
+                    <tr><td><strong>Category</strong></td><td>제품의 분류. 예: 전자제품, 의류 등.</td></tr>
+                    <tr><td><strong>Region</strong></td><td>매장이 위치한 지리적 구역.</td></tr>
+                    <tr><td><strong>Inventory Level</strong></td><td>현재 창고나 매장에 남아있는 물품의 수량.</td></tr>
+                    <tr><td><strong>Units Sold</strong></td><td>해당 날짜에 실제로 팔린 제품의 수.</td></tr>
+                    <tr><td><strong>Units Ordered</strong></td><td>재고 보충을 위해 주문한 수량.</td></tr>
+                    <tr><td><strong>Price</strong></td><td>제품의 판매 가격.</td></tr>
+                    <tr><td><strong>Discount</strong></td><td>적용된 할인율이나 할인 금액.</td></tr>
+                    <tr><td><strong>Weather Condition</strong></td><td>기록된 날짜의 날씨. 예: 맑음, 비.</td></tr>
+                    <tr><td><strong>Promotion</strong></td><td>판촉 행사 진행 여부.</td></tr>
+                    <tr><td><strong>Competitor Pricing</strong></td><td>경쟁 업체의 유사 제품 가격.</td></tr>
+                    <tr><td><strong>Seasonality</strong></td><td>해당 날짜의 계절.</td></tr>
+                    <tr><td><strong>Epidemic</strong></td><td>전염병 유행 여부.</td></tr>
+                    <tr><td><strong>Demand</strong></td><td>해당 제품의 일일 추정 수요.</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             <section class="report-section" id="eda">
@@ -368,23 +401,55 @@ study.optimize(objective, n_trials=20)</code></pre>
                 />
                 <figcaption>Optuna tuning result</figcaption>
               </figure>
-              <ul class="report-label-list">
-                <li><strong>Best trial:</strong> trial 7, value 3.6446170806884766</li>
-                <li><strong>Hidden Size:</strong> 64</li>
-                <li><strong>Learning Rate:</strong> 0.008040444263766957</li>
-                <li><strong>Dropout:</strong> 0.2433929223767682</li>
-                <li><strong>Attention Heads:</strong> 2</li>
-              </ul>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>파라미터</th>
+                      <th>최적값</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><strong>Best trial</strong></td><td>trial 7, value 3.6446170806884766</td></tr>
+                    <tr><td><strong>Hidden Size</strong></td><td>64</td></tr>
+                    <tr><td><strong>Learning Rate</strong></td><td>0.008040444263766957</td></tr>
+                    <tr><td><strong>Dropout</strong></td><td>0.2433929223767682</td></tr>
+                    <tr><td><strong>Attention Heads</strong></td><td>2</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             <section class="report-section" id="results">
               <h2>6. 결과 및 분석</h2>
 
               <h3>6.1. 최종 성능 평가</h3>
-              <ul class="report-label-list">
-                <li><strong>MAPE:</strong> My Model 10.15%, Baseline 54.79%. 목표치인 10% 미만에는 근소하게 도달하지 못했지만 기준 모델 대비 크게 개선되었다.</li>
-                <li><strong>RMSE:</strong> My Model 9.14, Baseline 61.06. 기준 모델 대비 85.03% 개선되어 15% 이상 개선 목표를 충분히 달성하였다.</li>
-              </ul>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>지표</th>
+                      <th>My Model</th>
+                      <th>Baseline</th>
+                      <th>평가</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>MAPE</strong></td>
+                      <td>10.15%</td>
+                      <td>54.79%</td>
+                      <td>목표치인 10% 미만에는 근소하게 도달하지 못했지만 기준 모델 대비 크게 개선되었다.</td>
+                    </tr>
+                    <tr>
+                      <td><strong>RMSE</strong></td>
+                      <td>9.14</td>
+                      <td>61.06</td>
+                      <td>기준 모델 대비 85.03% 개선되어 15% 이상 개선 목표를 충분히 달성하였다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
               <p>
                 테스트 데이터셋을 통해 최종 성능을 평가한 결과, 예측의 정확도를
                 나타내는 MAPE는 10.15%를 기록하였다. 이는 목표치인 10% 미만에 매우
@@ -478,10 +543,26 @@ study.optimize(objective, n_trials=20)</code></pre>
 
             <section class="report-section" id="appendix">
               <h2>8. 부록</h2>
-              <ul class="report-label-list">
-                <li><strong>코드:</strong> <a href="https://github.com/192cm/Retail-Store-Inventory-and-Demand-Forecasting.git">https://github.com/192cm/Retail-Store-Inventory-and-Demand-Forecasting.git</a></li>
-                <li><strong>데이터:</strong> <a href="https://www.kaggle.com/datasets/atomicd/retail-store-inventory-and-demand-forecasting">Retail Store Inventory and Demand Forecasting Dataset</a></li>
-              </ul>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>구분</th>
+                      <th>링크</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>코드</strong></td>
+                      <td><a href="https://github.com/192cm/Retail-Store-Inventory-and-Demand-Forecasting.git">https://github.com/192cm/Retail-Store-Inventory-and-Demand-Forecasting.git</a></td>
+                    </tr>
+                    <tr>
+                      <td><strong>데이터</strong></td>
+                      <td><a href="https://www.kaggle.com/datasets/atomicd/retail-store-inventory-and-demand-forecasting">Retail Store Inventory and Demand Forecasting Dataset</a></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             <div class="report-links">

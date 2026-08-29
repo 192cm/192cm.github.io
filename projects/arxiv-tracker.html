@@ -65,7 +65,7 @@
               </p>
 
               <h3>1.1 주요 기능</h3>
-              <ul class="report-label-list">
+              <ul>
                 <li>
                   <strong>자동 수집:</strong> arXiv 카테고리
                   <code>cs.CL</code>, <code>cs.LG</code>, <code>cs.AI</code>와
@@ -133,14 +133,30 @@
                 만들었습니다. 매번 fetcher와 summarizer를 직접 실행하는 대신
                 <code>/daily_papers</code> 한 번으로 수집과 요약을 처리합니다.
               </p>
-              <figure class="report-figure">
-                <img
-                  src="assets/arxiv-tracker/image2.png"
-                  alt="daily papers, search topic, my save 슬래시 명령 표"
-                  loading="lazy"
-                />
-                <figcaption>Table 1. 정의한 슬래시 명령</figcaption>
-              </figure>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>명령</th>
+                      <th>역할</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><code>/daily_papers</code></td>
+                      <td>fetcher + summarizer를 순차 실행하고 결과 5개 출력</td>
+                    </tr>
+                    <tr>
+                      <td><code>/search_topic &lt;키워드&gt;</code></td>
+                      <td>일회성 주제 검색 (DB 저장 없음)</td>
+                    </tr>
+                    <tr>
+                      <td><code>/my_save</code></td>
+                      <td>세션 종료 전 진행상황을 CLAUDE.md에 저장</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
               <h3>2.2 Skills: paper-summary</h3>
               <p>
@@ -197,15 +213,6 @@
 conda activate arxiv
 pip install -r requirements.txt
 echo "GEMINI_API_KEY=AIza..." &gt; .env</code></pre>
-              <figure class="report-figure">
-                <img
-                  src="assets/arxiv-tracker/image3.png"
-                  alt="arXiv-tracker 설치 명령"
-                  loading="lazy"
-                />
-                <figcaption>Snippet 1. 설치 명령</figcaption>
-              </figure>
-
               <h3>3.2 실행</h3>
               <pre class="report-code"><code># CLI 방식
 python -m src.fetcher       # 새 논문 수집
@@ -220,19 +227,11 @@ claude
                 월요일처럼 주말치 논문까지 포함해야 할 때는
                 <code>config.yaml</code>의 <code>days_back</code>을 3으로 설정합니다.
               </p>
-              <figure class="report-figure">
-                <img
-                  src="assets/arxiv-tracker/image5.png"
-                  alt="arXiv-tracker 실행 명령"
-                  loading="lazy"
-                />
-                <figcaption>Snippet 2. CLI와 Claude Code 실행 방식</figcaption>
-              </figure>
             </section>
 
             <section class="report-section" id="takeaways">
               <h2>4. 배운 점과 한계</h2>
-              <ul class="report-label-list">
+              <ul>
                 <li>
                   <strong>명령과 스킬의 결합:</strong> <code>/daily_papers</code>처럼
                   명시적으로 호출하는 명령 안에서 paper-summary 스킬의 암묵적 규칙이

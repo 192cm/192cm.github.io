@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Qwen2.5-3B-Instruct의 수학 추론 성능을 출력 계약, Self-Consistency, 후보 선택으로 최적화한 프로젝트 보고서입니다." />
+    <title>Qwen2.5-3B-Instruct 기반 수학 추론 모델 최적화: 출력 계약, Self-Consistency, 후보 선택 | Kunho</title>
+    <link rel="stylesheet" href="../styles.css?v=20260830-1" />
+    <script>window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] } };</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  </head>
+  <body>
+    <header class="topbar" aria-label="Portfolio navigation">
+      <a class="brand" href="../index.html#hero">Kunho</a>
+      <div class="topbar-actions">
+        <nav>
+          <a href="../index.html#design">Design</a>
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#awards">Proof</a>
+          <a href="../index.html#specs">Specs</a>
+        </nav>
+        <div class="language-switch" aria-label="Language selector"><span class="active" aria-current="page">KO</span></div>
+      </div>
+    </header>
+    <main>
+      <article class="report-article">
+        <header class="report-hero">
+          <p class="report-kicker">Project Report</p>
+          <h1>Qwen2.5-3B-Instruct 기반 수학 추론 모델 최적화: 출력 계약, Self-Consistency, 후보 선택</h1>
+
+          <section class="report-summary" aria-labelledby="summary-title">
+            <h2 id="summary-title">요약 (Summary)</h2>
+            <p>본 프로젝트는 제5회 대학 연합 아주 소중한 딥러닝 챌린지 2026에서 고정 베이스 모델인 <code>Qwen/Qwen2.5-3B-Instruct</code>를 정수 Exact Match 기반 수학 추론 과제에 최적화하는 프로젝트다. 출력 계약과 답 추출기, 생성 토큰 상한을 개선해 random holdout 정확도를 64.20%에서 67.99%로 높이고 invalid output을 15.03%에서 0.61%로 낮췄다. Self-Consistency@32는 고정 holdout 합집합 3,737문항에서 69.31%를 기록했으며, 세 생성 arm을 결합한 96-sample 탐색적 투표는 71.29%에 도달했다. RFT, GenSelect, ORM은 채택 기준을 충족하지 못해 제외하고, 검증된 개선만 유지하는 재현 가능한 평가·롤백 파이프라인을 구축했다.</p>
+            <p class="report-keywords"><strong>Keywords</strong> Mathematical Reasoning, Qwen2.5, QLoRA, Rejection Sampling, Self-Consistency, Outcome Reward Model, Reproducible ML</p>
+          </section>
+        </header>
+        <div class="report-body">
+          <aside class="report-toc" aria-label="Report table of contents">
+            <strong>Contents</strong>
+            <a href="#1-서론">1. 서론</a>
+            <a href="#2-작업-정의">2. 작업 정의</a>
+            <a href="#3-데이터-선정과-품질-관리">3. 데이터 선정과 품질 관리</a>
+            <a href="#4-모델-및-개선-전략">4. 모델 및 개선 전략</a>
+            <a href="#5-실험-환경-및-결과">5. 실험 환경 및 결과</a>
+            <a href="#6-결론-및-향후-과제">6. 결론 및 향후 과제</a>
+            <a href="#references">References</a>
+          </aside>
+          <div class="report-content">
+            <section class="report-section" id="주요-기여">
+              <h2>주요 기여</h2>
+              <ul>
+                <li>17,000개 원본 문항을 검증하고 재현 가능한 canonical dataset과 holdout을 구축했다.</li>
+                <li>계산을 수행하지 않는 문자열 기반 정수 답 추출기와 출력 계약을 설계했다.</li>
+                <li>Hugging Face와 vLLM을 지원하며 중단 후 재개할 수 있는 생성·평가 파이프라인을 구현했다.</li>
+                <li>RFT, QLoRA SFT, Self-Consistency, GenSelect, ORM을 동일한 평가 조건에서 비교했다.</li>
+                <li>Config, manifest, raw generation, 해시를 보존해 모든 실험의 감사 경로를 구축했다.</li>
+                <li>성능 기준을 통과하지 못한 모델과 선택기를 자동으로 기각하고 기존 경로를 보존했다.</li>
+              </ul>
+            </section>
+            <section class="report-section" id="1-서론">
+              <h2>1. 서론 (Introduction)</h2>
+              <p>대규모 언어 모델은 수학 문제에 대한 풀이를 자연어로 생성할 수 있지만, 생성된 풀이가 항상 정확한 최종 답으로 이어지는 것은 아니다. 특히 작은 범용 모델은 긴 추론 중 계산을 잘못하거나, 올바른 답을 구하고도 지정된 출력 형식을 지키지 못하거나, 토큰 상한에 도달해 최종 답을 출력하지 못하는 문제가 발생한다.</p>
+              <p>본 대회에서는 <code>Qwen/Qwen2.5-3B-Instruct</code>만을 출발점으로 사용해야 했다. 다른 수학 특화 모델을 베이스로 사용하거나 외부 모델의 가중치를 병합할 수 없었고, 최종 추론 과정에서는 외부 API, 웹 검색, 코드 실행 및 계산 도구 호출도 허용되지 않았다. 사용할 수 있는 주요 수단은 fine-tuning, 다중 샘플링, Majority Voting, Self-Consistency와 모델 출력에 대한 형식적 후처리였다.</p>
+              <p>초기에는 fine-tuning이 가장 중요한 개선 수단일 것으로 예상했다. 그러나 베이스라인을 분석한 결과, random holdout 생성의 15.03%가 수학적 오답 이전에 답 추출에 실패하고 있었다. 많은 출력이 토큰 상한에 도달하거나, 답을 계산하고도 <code>FINAL_ANSWER:</code>와 같은 명시적 마커를 남기지 못했다.</p>
+              <p>첫 번째 목표는 모델 학습이 아니라 출력 손실 제거로 정했다. 그다음 올바른 답이 여러 추론 경로에서 반복될 가능성을 이용하는 Self-Consistency를 적용했다. 마지막으로 다수결이 놓친 정답을 GenSelect와 ORM이 회수할 수 있는지 검증했다.</p>
+              <p>이 과정에서 가장 중요하게 유지한 원칙은 다음과 같다.</p>
+              <ul>
+                <li>정답 라벨은 생성과 후보 선택이 끝난 뒤 평가 단계에서만 사용한다.</li>
+                <li>새로운 방법은 고정 holdout에서 기존 방법과 paired comparison으로 비교한다.</li>
+                <li>성능이 일부 상승하더라도 효과 크기와 통계 기준을 만족하지 못하면 기존 경로를 교체하지 않는다.</li>
+                <li>실패한 실험도 생성 원문, 설정, 평가 결과를 보존해 다음 실험의 근거로 사용한다.</li>
+              </ul>
+            </section>
+            <section class="report-section" id="2-작업-정의">
+              <h2>2. 작업 정의 (Task Formulation)</h2>
+              <h3 id="2-1-문제-정의">2.1. 문제 정의</h3>
+              <p>각 입력은 자연어와 LaTeX 수식을 포함할 수 있는 수학 문제이며, 출력은 하나의 정수다. 평가 함수는 다음과 같이 단순하지만 엄격하다.</p>
+              <div class="report-equation">\[
+\text{Accuracy}
+=
+\frac{\text{정규화된 예측 정수가 정답과 일치한 문항 수}}
+{\text{전체 문항 수}}
+\]</div>
+              <p>풀이 과정이 타당하더라도 최종 정수가 없거나, 답 외의 문자열이 제출되거나, 부호와 자릿수가 잘못되면 오답이다. 반대로 평가 지표가 요구하는 것은 풀이 문장의 품질이 아니라 최종 정수의 정확성이다.</p>
+              <p>이 특성을 바탕으로 전체 문제를 세 부분으로 나누었다.</p>
+              <ol class="references-list">
+                <li>모델이 올바른 추론 경로를 생성할 수 있는가?</li>
+                <li>생성된 풀이에서 최종 정수를 안정적으로 추출할 수 있는가?</li>
+                <li>여러 후보가 서로 다른 답을 낼 때 올바른 답을 선택할 수 있는가?</li>
+              </ol>
+              <h3 id="2-2-전체-파이프라인">2.2. 전체 파이프라인</h3>
+              <pre class="report-code"><code class="language-text">원본 train / leaderboard
+        │
+        ▼
+데이터 검증·오염 검사·결정적 분할
+        │
+        ▼
+Qwen2.5-3B-Instruct 생성
+        │
+        ├── 출력 계약 및 정수 답 추출
+        ├── RFT 데이터 수확 → QLoRA SFT
+        └── 문제당 k=32 다중 샘플링
+                          │
+                          ▼
+          Majority Voting / Vote Filter
+                          │
+               ┌──────────┴──────────┐
+               ▼                     ▼
+          GenSelect              Pointwise ORM
+               └──────────┬──────────┘
+                          ▼
+                ID·형식·coverage 검증
+                          │
+                          ▼
+                    submission.csv</code></pre>
+              <h3 id="2-3-채택과-롤백-기준">2.3. 채택과 롤백 기준</h3>
+              <p>실험 결과를 보고 유리한 기준을 사후에 만드는 것을 방지하기 위해 각 주요 실험은 실행 전에 채택 조건을 설정했다. 대표적인 후보 선택 실험에서는 다음 조건을 사용했다.</p>
+              <ul>
+                <li>고정 holdout 합집합에서 기존 방식보다 최소 <code>+1.5%p</code> 개선</li>
+                <li>Paired exact McNemar test의 <code>p &lt; 0.05</code></li>
+                <li>Hard 또는 format diagnostic에서 <code>-2%p</code>를 초과하는 하락이 없을 것</li>
+                <li>Invalid output 증가가 <code>+1%p</code> 이내일 것</li>
+              </ul>
+              <p>정확도가 상승했어도 기준에 미달하면 <code>HOLD</code>, 정확도가 하락하거나 guardrail을 위반하면 <code>REJECT</code>로 기록했다. 채택하지 않은 실험은 제출 경로를 변경하지 않았고 기존 모델과 산출물도 덮어쓰지 않았다.</p>
+            </section>
+            <section class="report-section" id="3-데이터-선정과-품질-관리">
+              <h2>3. 데이터 선정과 품질 관리 (Dataset)</h2>
+              <h3 id="3-1-데이터-구성">3.1. 데이터 구성</h3>
+              <p>대회에서 제공한 원본 train은 17,000문항이다. 주최 측 제외 목록 627문항을 제거하여 16,373문항의 canonical train을 구축했다. 원본 파일은 수정하지 않고 파생 데이터만 별도 경로에 생성했다.</p>
+              <p><strong>Table 1. 데이터셋 및 평가 집합 구성</strong></p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>구분</th><th>문항 수</th><th>목적</th></tr></thead>
+                  <tbody>
+                    <tr><td>원본 train</td><td>17,000</td><td>주최 측 제공 원본</td></tr>
+                    <tr><td>주최 측 제외 목록</td><td>627</td><td>이미지 의존·문항 파손·라벨 신뢰 문제 제거</td></tr>
+                    <tr><td>Canonical train</td><td>16,373</td><td>모든 신규 학습·분할의 기준</td></tr>
+                    <tr><td>RFT pool</td><td>12,636</td><td>다중 생성 기반 정답 풀이 수확</td></tr>
+                    <tr><td>Random holdout</td><td>1,637</td><td>전체 분포의 일반 성능 측정</td></tr>
+                    <tr><td>Template holdout</td><td>1,637</td><td>유사 문제 구조 누수 방지</td></tr>
+                    <tr><td>Hard diagnostic</td><td>550</td><td>낮은 베이스라인 성능 구간 분석</td></tr>
+                    <tr><td>Format diagnostic</td><td>256</td><td>음수·0·대정수·출력 실패 분석</td></tr>
+                    <tr><td>Leaderboard</td><td>1,000</td><td>라벨 비공개 추론 대상</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>네 평가 집합은 일부 문항이 겹치기 때문에 단순 합산하지 않았다. 중복을 제거한 고정 holdout 합집합은 3,737문항이며, 주요 test-time 기법은 이 합집합의 동일한 ID와 순서에서 비교했다.</p>
+              <h3 id="3-2-결정적-분할과-오염-검사">3.2. 결정적 분할과 오염 검사</h3>
+              <p>Random holdout은 고정 seed로 생성했고, Template holdout은 질문 내 숫자를 정규화한 template group 단위로 분리했다. 같은 구조에서 숫자만 다른 문제가 train과 validation 양쪽에 들어가 성능을 부풀리지 않도록 한 조치였다.</p>
+              <p>외부 수학 데이터와 자체 생성 데이터를 사용할 때는 다음 기준으로 보호 집합과의 교집합을 검사했다.</p>
+              <ul>
+                <li>정규화된 질문의 exact match</li>
+                <li>공백·문장부호를 제거한 near-duplicate</li>
+                <li>숫자를 치환한 template-group match</li>
+                <li>문제 ID 및 원본 해시 일치</li>
+              </ul>
+              <p>평가용 문항과 leaderboard 문항은 RFT, selector, ORM 학습 데이터에서 제외했다. 모든 분할 결과에는 입력 파일 해시, seed, 문항 수, 제외 사유와 출력 SHA-256을 포함한 manifest를 남겼다.</p>
+              <h3 id="3-3-rft-데이터-구축">3.3. RFT 데이터 구축</h3>
+              <p>RFT pool 12,636문항 중 이미지 의존 문항을 제외한 12,618문항에 대해 문제당 16개의 풀이를 생성했다. 생성 결과의 정수 답이 주어진 정답과 일치하는 풀이만 남기고, 중복된 추론 경로와 품질 기준을 통과하지 못한 출력은 제외했다.</p>
+              <p>그 결과 10,826문항에서 정답 풀이를 하나 이상 수확했으며, 총 40,645개의 SFT 샘플을 구축했다. 문제 기준 수확률은 85.80%였다.</p>
+              <p>이 방식은 모델이 직접 생성한 풀이 가운데 정답이 확인된 경로만 학습에 재사용하는 <a href="https://arxiv.org/abs/2308.01825">Rejection Sampling Fine-Tuning</a>의 아이디어를 적용한 것이다. 다만 정답과 일치해도 풀이의 모든 중간 단계가 논리적으로 타당하다고 보장할 수는 없다. 실제 채택 여부는 별도의 holdout 성능으로 판단했다.</p>
+            </section>
+            <section class="report-section" id="4-모델-및-개선-전략">
+              <h2>4. 모델 및 개선 전략 (Model &amp; Strategy)</h2>
+              <h3 id="4-1-base-model과-모델-신원-고정">4.1. Base Model과 모델 신원 고정</h3>
+              <p>베이스 모델은 대회 규정에 따라 <code>Qwen/Qwen2.5-3B-Instruct</code>를 사용했다. 실험 중 모델 파일이 갱신되거나 서로 다른 tokenizer가 혼용되는 일을 방지하기 위해 모델과 tokenizer revision을 다음 커밋으로 고정했다.</p>
+              <pre class="report-code"><code class="language-text">Model: Qwen/Qwen2.5-3B-Instruct
+Revision: aa8e72537993ba99e69dfaafa59ed015b17504d1
+Tokenizer Revision: aa8e72537993ba99e69dfaafa59ed015b17504d1</code></pre>
+              <p>모델은 수학에 특화되지 않은 범용 3B 언어 모델이다. 따라서 더 큰 모델로 교체하거나 외부 수학 모델을 앙상블하는 대신, 다음 세 종류의 오류를 분리해 개선했다.</p>
+              <ul>
+                <li><strong>생성 실패:</strong> 올바른 추론 경로 자체를 만들지 못하는 문제</li>
+                <li><strong>출력 실패:</strong> 답을 계산했지만 지정된 형식으로 남기지 못하는 문제</li>
+                <li><strong>선택 실패:</strong> 여러 후보 중 정답이 존재하지만 최종 투표에서 선택되지 않는 문제</li>
+              </ul>
+              <p>이렇게 나눈 이유는 학습, 추론, 후보 선택의 효과를 혼동하지 않기 위해서다. 예를 들어 답 추출 실패를 모델의 수학 능력 부족으로 해석하면 불필요한 fine-tuning을 하게 되고, 후보 선택 실패를 생성 실패로 해석하면 샘플 수만 계속 늘리게 된다.</p>
+              <p><a href="https://arxiv.org/abs/2409.12122">Qwen2.5-Math Technical Report</a>에서 제안한 self-improvement, 반복적 데이터 생성, reward model 기반 후보 선택을 참고했지만, 대회의 3B 모델·GPU·추론 규칙에 맞게 규모를 축소했다.</p>
+              <h3 id="4-2-출력-계약과-정수-답-추출">4.2. 출력 계약과 정수 답 추출</h3>
+              <p>초기 베이스라인은 최대 1,024토큰으로 풀이를 생성하고, <code>FINAL_ANSWER:</code>와 <code>\boxed{}</code> 등 제한된 명시적 표현에서만 답을 추출했다. 이 방식은 잘못된 숫자를 정답으로 오인할 가능성은 낮았지만 다음과 같은 출력을 모두 invalid로 처리했다.</p>
+              <ul>
+                <li>올바른 답을 일반 문장으로 작성한 경우</li>
+                <li>마지막 줄에 정수만 출력했지만 마커가 없는 경우</li>
+                <li>동일한 답을 서로 다른 표기로 반복한 경우</li>
+                <li>긴 풀이가 1,024토큰에서 잘려 최종 답을 출력하지 못한 경우</li>
+                <li>음수, 0, 긴 정수의 표기가 예상한 정규식과 다른 경우</li>
+              </ul>
+              <p>이를 해결하기 위해 출력 계약을 세 조건으로 나누어 소거 실험을 진행했다.</p>
+              <p><strong>Table 2. 출력 계약 소거 실험 조건</strong></p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>조건</th><th>생성 설정</th><th>추출 정책</th><th>목적</th></tr></thead>
+                  <tbody>
+                    <tr><td>A</td><td>최대 1,024토큰</td><td>기존 strict extractor</td><td>원래 베이스라인</td></tr>
+                    <tr><td>B</td><td>A와 동일한 생성물</td><td>개선된 fallback extractor</td><td>파서 변경 효과 분리</td></tr>
+                    <tr><td>C</td><td>최대 2,048토큰으로 재생성</td><td>개선된 fallback extractor</td><td>토큰 상한 효과 추가 측정</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>조건 B는 조건 A와 완전히 동일한 generation bytes를 다시 파싱했다. 따라서 A와 B의 차이는 모델 생성이나 seed 변화가 아니라 답 추출 정책의 영향만을 나타낸다. 조건 C에서는 추출기를 유지한 채 생성 토큰 상한만 2,048로 확장했다.</p>
+              <p>개선된 추출기는 다음 우선순위를 사용했다.</p>
+              <ol class="references-list">
+                <li><code>FINAL_ANSWER:</code> 뒤의 정수</li>
+                <li><code>\boxed{}</code> 내부의 정수</li>
+                <li>독립된 마지막 줄의 정수</li>
+                <li>안전한 형식으로 판정되는 마지막 정수 표현</li>
+                <li>명시적 정답끼리 충돌하면 invalid</li>
+              </ol>
+              <p>추출기는 문자열 표기만 읽고 정규화한다. 수식 계산, 방정식 풀이, 소수점 반올림, 수식 동치 판정 등 정답을 수정할 수 있는 연산은 수행하지 않는다.</p>
+              <p>출력 계약 개선의 효과는 두 부분으로 나뉘었다.</p>
+              <ul>
+                <li>동일 생성물을 더 정확하게 읽어 회수하는 <strong>Parser Gain</strong></li>
+                <li>긴 풀이가 최종 답까지 도달하도록 하는 <strong>Token-Cap Gain</strong></li>
+              </ul>
+              <h3 id="4-3-rft와-qlora-학습">4.3. RFT와 QLoRA 학습</h3>
+              <p>모델 학습에는 전체 파라미터를 업데이트하는 full fine-tuning 대신 QLoRA를 사용했다. 24GB VRAM에서 여러 학습 대조군을 반복 실행하면서 실패한 adapter를 빠르게 폐기하려면 학습 비용과 저장 공간을 줄여야 했기 때문이다.</p>
+              <p>주요 학습 설정은 다음과 같다.</p>
+              <pre class="report-code"><code class="language-text">Quantization: NF4 4-bit + double quantization
+Compute dtype: bfloat16
+LoRA rank: 64
+LoRA alpha: 128
+LoRA dropout: 0.0
+Epochs: 2
+Learning rate: 1e-4
+Scheduler: cosine
+Warmup ratio: 0.03
+Optimizer: paged_adamw_8bit
+Maximum sequence length: 2048
+Effective batch size: 약 32
+Packing: enabled</code></pre>
+              <p>LoRA adapter는 attention뿐 아니라 MLP projection까지 학습하도록 설정했다.</p>
+              <pre class="report-code"><code class="language-text">q_proj, k_proj, v_proj, o_proj,
+gate_proj, up_proj, down_proj</code></pre>
+              <p>LoRA는 사전학습 가중치를 고정한 채 작은 저랭크 업데이트만 학습하는 parameter-efficient fine-tuning 방식이다. 기본 설계는 <a href="https://arxiv.org/abs/2106.09685">LoRA 논문</a>을 참고했다.</p>
+              <p>학습 데이터에 따른 영향을 분리하기 위해 다음 대조군을 구성했다.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>실험</th><th>학습 데이터</th><th>검증하려는 가설</th></tr></thead>
+                  <tbody>
+                    <tr><td>Base</td><td>학습 없음</td><td>출력 계약만 적용한 기준</td></tr>
+                    <tr><td>Answer-only</td><td>문제와 최종 정답</td><td>정답 형식 학습만으로 충분한가</td></tr>
+                    <tr><td>RFT R1</td><td>자체 생성 정답 풀이</td><td>자기 생성 reasoning trace가 성능을 높이는가</td></tr>
+                    <tr><td>External CoT</td><td>외부 공개 풀이</td><td>외부 풀이 분포가 도움이 되는가</td></tr>
+                    <tr><td>RFT + External</td><td>두 풀이 데이터 혼합</td><td>데이터 다양성이 성능을 높이는가</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>RFT 데이터는 문제당 16개의 풀이를 생성하고, 추출된 정수 답이 정답과 정확히 일치한 경로만 수확해 구축했다.</p>
+              <pre class="report-code"><code class="language-text">temperature = 0.8
+top_p = 0.95
+n = 16
+max_new_tokens = 2048</code></pre>
+              <p>12,618개의 유효 RFT 대상 중 10,826문항에서 정답 풀이를 하나 이상 수확했으며, 총 40,645개의 SFT 샘플을 만들었다.</p>
+              <p>다만 정답 문자열이 일치한다고 해서 풀이의 모든 중간 단계가 올바르다는 보장은 없다. 또한 쉬운 문제는 16개 생성 중 여러 개가 정답이기 때문에 데이터 수가 쉬운 문제에 편중될 수 있다. 따라서 데이터 수확률이 아니라 고정 holdout 성능을 최종 채택 기준으로 사용했다.</p>
+              <h3 id="4-4-self-consistency와-adaptive-sampling">4.4. Self-Consistency와 Adaptive Sampling</h3>
+              <p>단일 greedy 생성은 같은 문제에서도 하나의 추론 경로만 사용한다. 작은 모델은 초반의 계산 실수 하나가 최종 오답으로 이어질 수 있다. 이에 서로 다른 추론 경로를 여러 번 생성하고 가장 자주 나온 답을 선택하는 Self-Consistency를 적용했다.</p>
+              <p>고정 다중 생성 조건은 다음과 같다.</p>
+              <pre class="report-code"><code class="language-text">temperature = 0.8
+top_p = 0.95
+k = 32
+max_input_tokens = 2048
+max_new_tokens = 2048
+seed = 42</code></pre>
+              <p>각 생성 결과에서 정수 답을 추출한 뒤 같은 정수끼리 그룹화하고, 가장 많은 표를 받은 답을 선택했다. 최빈 답이 여러 개이면 그중 sample index가 가장 빠른 답을 사용했다. 정답 라벨이나 문제 유형은 생성과 투표에 사용하지 않았다.</p>
+              <p>추론 비용을 줄이기 위해 adaptive sampling도 함께 실험했다.</p>
+              <ol class="references-list">
+                <li>먼저 4개의 풀이를 생성한다.</li>
+                <li>네 답이 모두 유효하고 같은 정수이면 생성을 종료한다.</li>
+                <li>하나라도 다르면 28개를 추가 생성해 총 32개로 투표한다.</li>
+              </ol>
+              <p>Adaptive 방식은 쉬운 문제에서 생성 비용을 절약할 수 있지만 최초 4개가 같은 오답으로 수렴할 위험도 있다. 비용만 보고 채택하지 않고 동일한 생성 예산의 fixed-k 방식과 정확도를 비교했다.</p>
+              <p>전체 추론 예산은 24시간으로 설정했으며, 실행 실패와 제출 검증을 위한 예비 시간 6시간을 남기기 위해 채택 가능한 추론 경로의 예상 실행 시간은 최대 18시간으로 제한했다.</p>
+              <h3 id="4-5-vote-filter와-multi-view-voting">4.5. Vote Filter와 Multi-View Voting</h3>
+              <p>Self-Consistency에서는 모든 표를 동일하게 취급한다. 그러나 분석 결과 다음과 같은 출력은 정답률이 상대적으로 낮았다.</p>
+              <ul>
+                <li>명시적 답 마커 없이 마지막 숫자만 추출된 출력</li>
+                <li>서로 다른 명시적 답이 충돌한 출력</li>
+                <li>토큰 상한 근처에서 종료된 출력</li>
+                <li>풀이가 비정상적으로 끊기거나 정답 표기가 불완전한 출력</li>
+              </ul>
+              <p>이 분석을 바탕으로 수학 계산 없이 생성 형식과 종료 상태만으로 저품질 표를 제거하는 vote filter를 구현했다. 필터 적용 후 모든 표가 사라지면 원래 다수결로 되돌아가는 fallback도 두었다.</p>
+              <p>단일 prompt의 편향을 줄이기 위해서는 세 종류의 생성 arm을 구성했다.</p>
+              <ul>
+                <li><strong>Base:</strong> 기본 출력 계약 prompt</li>
+                <li><strong>CoT Boxed:</strong> 풀이 뒤 정답을 <code>\boxed{}</code>로 출력하도록 지시</li>
+                <li><strong>RFT R1:</strong> 자체 생성 풀이로 학습한 LoRA adapter</li>
+              </ul>
+              <p>각 arm은 문제당 32개씩 총 96개의 후보를 생성한다. 단순 flat majority와 arm-normalized voting을 모두 비교했다.</p>
+              <p>Arm-normalized voting에서는 특정 arm에 유효 표가 더 많이 남았다는 이유만으로 전체 결과를 지배하지 않도록 각 arm의 정답 분포를 합계 1로 정규화했다.</p>
+              <div class="report-equation">\[
+\text{score}(a)
+=
+\sum_{\text{arm}}
+\frac{\text{count}_{\text{arm}}(a)}
+{\text{valid votes}_{\text{arm}}}
+\]</div>
+              <p>이 방식은 새로운 생성이나 학습 없이 기존 frozen candidate pool을 재집계한 탐색적 실험이다. 이전 holdout 결과를 확인한 뒤 설계했으므로 확증적 결과와 구분했으며, 후속 fresh validation이 필요한 후보로 남겼다.</p>
+              <h3 id="4-6-genselect">4.6. GenSelect</h3>
+              <p>다수결과 pass@32 사이의 격차를 줄이고자 GenSelect를 구현했다. 답의 빈도만 세지 않고 모델이 후보 풀이를 직접 읽어 가장 타당한 후보를 선택하는 방식이다.</p>
+              <p>한 번의 selector 입력에는 16개의 후보를 넣었고, 32개 전체 후보에 대해 서로 다른 부분집합으로 4회의 선택을 수행했다. 각 selector 출력의 선택 답을 다시 다수결로 합쳤다.</p>
+              <p>비교 조건은 다음 두 가지로 구성했다.</p>
+              <ul>
+                <li><strong>Full candidate:</strong> 풀이 후보 32개와 selector 호출 4회</li>
+                <li><strong>Equal budget:</strong> 풀이 28개와 selector 호출 4회로 총 생성 예산 32회 고정</li>
+              </ul>
+              <p>GenSelect 전용 LoRA는 최대 8,192토큰의 입력을 사용했다. 후보가 context에 모두 들어가도록 각 풀이의 앞부분과 마지막 부분을 요약해 구성하고, 후보 위치를 섞어 위치 암기 여부도 검사했다.</p>
+              <pre class="report-code"><code class="language-text">Maximum length: 8192
+Selector candidates per input: 16
+Selector runs: 4
+Learning rate: 3e-5
+Epochs: 1
+LoRA rank / alpha: 64 / 128</code></pre>
+              <p>학습 데이터는 쉬운 문제보다 정답 후보가 적은 hard-tail 문제를 우선하도록 구성했다. 그럼에도 selector가 다수결을 넘지 못하면 최종 추론 경로에서 제거하도록 채택 기준을 설정했다.</p>
+              <h3 id="4-7-outcome-reward-model">4.7. Outcome Reward Model</h3>
+              <p>GenSelect는 여러 긴 풀이를 하나의 context에서 동시에 비교해야 한다. 이 부담을 줄이고자 문제와 후보 풀이 하나만 입력받아 정답 가능성을 scalar score로 출력하는 pointwise ORM을 구현했다.</p>
+              <p>ORM은 <code>Qwen2.5-3B-Instruct</code>를 sequence classification 모델로 변환하고, LoRA adapter와 score head를 학습했다.</p>
+              <pre class="report-code"><code class="language-text">Task type: Sequence Classification
+Maximum length: 4096
+LoRA rank: 64
+LoRA alpha: 128
+LoRA dropout: 0.05
+Loss: BCEWithLogitsLoss
+Epochs: 2
+Learning rate: 2e-5
+Global effective batch size: 32
+Training: 2-GPU DDP</code></pre>
+              <p>각 학습 문항은 정답 풀이와 오답 풀이를 모두 포함하며, 문제별 positive와 negative 수를 1:1로 맞췄다. 파싱이 불가능한 출력은 너무 쉽게 구별되는 negative가 될 수 있으므로 학습에서 제외했다.</p>
+              <p>후보 \(i\)의 sigmoid score를 \(s_i\), 답 \(a\)를 생성한 후보 수를 \(n_a\)라 할 때 최종 답의 가중치는 다음과 같이 계산했다.</p>
+              <div class="report-equation">\[
+W(a)
+=
+n_a
+\times
+\exp\left(
+\frac{1}{n_a}
+\sum_{i:y_i=a}\log
+\left(\operatorname{clip}(s_i, 10^{-6}, 1-10^{-6})\right)
+\right)
+\]</div>
+              <p>표 수가 많은 답을 기본적으로 선호하되, 같은 답을 생성한 풀이의 ORM 점수가 높으면 소수 후보도 다수결을 뒤집을 수 있게 했다. Score가 없거나 모든 후보가 invalid이면 원래 majority voting으로 되돌아갔다.</p>
+            </section>
+            <section class="report-section" id="5-실험-환경-및-결과">
+              <h2>5. 실험 환경 및 결과 (Experiments &amp; Results)</h2>
+              <h3 id="5-1-실험-환경">5.1. 실험 환경</h3>
+              <p>대부분의 생성과 QLoRA 학습에는 NVIDIA GeForce RTX 4090 24GB 한 장을 사용했다. ORM 학습과 fresh candidate scoring에는 같은 사양의 RTX 4090 두 장을 사용했다.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>구성 요소</th><th>환경</th></tr></thead>
+                  <tbody>
+                    <tr><td>GPU</td><td>NVIDIA GeForce RTX 4090 24GB</td></tr>
+                    <tr><td>CPU</td><td>AMD EPYC 7502P</td></tr>
+                    <tr><td>Python</td><td>3.12.13</td></tr>
+                    <tr><td>PyTorch</td><td>2.13.0+cu130</td></tr>
+                    <tr><td>Transformers</td><td>5.15.1</td></tr>
+                    <tr><td>PEFT</td><td>0.20.0</td></tr>
+                    <tr><td>TRL</td><td>1.10.0</td></tr>
+                    <tr><td>vLLM</td><td>0.27.1</td></tr>
+                    <tr><td>주요 연산 형식</td><td>bfloat16</td></tr>
+                    <tr><td>학습 양자화</td><td>NF4 4-bit</td></tr>
+                    <tr><td>생성 엔진</td><td>Hugging Face / vLLM</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Greedy baseline은 초당 약 13.24개의 생성을 처리했으며, 3,737문항 합집합 생성에 약 282초가 소요됐다. 문제당 32개를 생성하는 T8에서는 초당 약 10.67개의 생성을 처리했고, 1,000문항의 예상 실행 시간은 약 50분이었다.</p>
+              <p>모델과 tokenizer revision, prompt, seed, generation config가 하나라도 달라지면 기존 cache를 재사용하지 않도록 했다.</p>
+              <h3 id="5-2-평가-범위">5.2. 평가 범위</h3>
+              <p>실험 결과를 비교할 때 평가 범위가 다른 수치를 하나의 성능 향상처럼 연결하지 않았다.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>평가 범위</th><th>문항 수</th><th>용도</th></tr></thead>
+                  <tbody>
+                    <tr><td>Random holdout</td><td>1,637</td><td>전체 분포의 일반 성능</td></tr>
+                    <tr><td>Template holdout</td><td>1,637</td><td>유사 템플릿 누수 방지</td></tr>
+                    <tr><td>Hard diagnostic</td><td>550</td><td>낮은 성능 구간 분석</td></tr>
+                    <tr><td>Format diagnostic</td><td>256</td><td>출력 형식·긴 풀이 분석</td></tr>
+                    <tr><td>고정 holdout 합집합</td><td>3,737</td><td>Self-Consistency 및 selector 비교</td></tr>
+                    <tr><td>Fresh ORM validation</td><td>1,000</td><td>기존 실험과 분리된 ORM 확증 평가</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Random, template, hard, format 집합에는 일부 중복 문항이 있기 때문에 단순 합산하지 않았다. 3,737문항 합집합 수치는 중복을 제거한 뒤 문항당 한 번만 평가한 결과다. ORM의 1,000문항 fresh validation은 기존 모델이나 정책 선택에 사용하지 않은 별도 집합이므로 T8 합집합과 직접적인 절대 정확도 비교에는 사용하지 않았다.</p>
+              <h3 id="5-3-출력-계약-ablation">5.3. 출력 계약 Ablation</h3>
+              <p><strong>Table 3. 출력 계약 조건별 결과</strong></p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>조건</th><th>Random Accuracy</th><th>Random Invalid</th><th>Format Accuracy</th><th>Format Invalid</th></tr></thead>
+                  <tbody>
+                    <tr><td>A. 1,024토큰 + strict extractor</td><td>64.20%</td><td>15.03%</td><td>32.03%</td><td>43.36%</td></tr>
+                    <tr><td>B. 동일 생성 + fallback extractor</td><td>67.07%</td><td><strong>0.49%</strong></td><td>38.28%</td><td><strong>1.56%</strong></td></tr>
+                    <tr><td>C. 2,048토큰 + fallback extractor</td><td><strong>67.99%</strong></td><td>0.61%</td><td><strong>46.88%</strong></td><td>1.95%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>조건 A에서 B로 변경했을 때 random 정확도는 2.87%p, format 정확도는 6.25%p 상승했다. 모델을 다시 실행하지 않고 동일한 출력 파일을 재파싱한 결과이므로 이 상승분은 순수하게 답 추출 정책에서 발생했다.</p>
+              <p>조건 B에서 C로 변경했을 때 random은 추가로 0.92%p, format은 8.59%p 상승했다. 긴 풀이가 많은 format diagnostic에서 토큰 상한 확장의 효과가 훨씬 컸다.</p>
+              <p>토큰 상한 도달률도 다음과 같이 감소했다.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>평가 집합</th><th>1,024토큰 Baseline</th><th>2,048토큰 적용</th></tr></thead>
+                  <tbody>
+                    <tr><td>Random holdout</td><td>9.53%</td><td>2.81%</td></tr>
+                    <tr><td>Template holdout</td><td>9.10%</td><td>2.75%</td></tr>
+                    <tr><td>Hard diagnostic</td><td>20.18%</td><td>4.91%</td></tr>
+                    <tr><td>Format diagnostic</td><td>35.55%</td><td>5.08%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>모델을 fine-tuning하기 전에 파서와 생성 길이부터 수정하는 편이 가장 비용 효율적이었다.</p>
+              <h3 id="5-4-qlora-학습-ablation">5.4. QLoRA 학습 Ablation</h3>
+              <p><strong>Table 4. 학습 데이터별 Greedy Accuracy</strong></p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>모델</th><th>Random</th><th>Template</th><th>Hard</th><th>Format</th></tr></thead>
+                  <tbody>
+                    <tr><td>Base + 출력 계약</td><td>67.99%</td><td>66.95%</td><td><strong>32.55%</strong></td><td><strong>46.88%</strong></td></tr>
+                    <tr><td>Answer-only SFT</td><td>23.21%</td><td>22.48%</td><td>14.36%</td><td>18.75%</td></tr>
+                    <tr><td>RFT R1</td><td><strong>68.85%</strong></td><td>67.50%</td><td>31.45%</td><td>41.80%</td></tr>
+                    <tr><td>RFT + External CoT</td><td>67.93%</td><td><strong>67.62%</strong></td><td>29.45%</td><td>40.63%</td></tr>
+                    <tr><td>External CoT</td><td>60.84%</td><td>61.33%</td><td>21.64%</td><td>37.50%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Answer-only SFT는 invalid output을 낮췄지만 모든 split에서 정확도가 크게 하락했다. 모델이 풀이 과정을 생략하고 짧은 답을 바로 생성하는 쪽으로 이동하면서 새로운 문제를 해결하는 추론 능력이 약해진 것으로 분석했다.</p>
+              <p>RFT R1은 random holdout에서 base보다 0.86%p 높았지만 hard에서 1.09%p, format에서 5.08%p 하락했다. RFT 수확 데이터에 쉬운 문제가 많이 포함되어 일반 문장제에는 소폭 도움이 되었지만, 긴 풀이와 어려운 문제에 대한 개선으로 이어지지 않았다.</p>
+              <p>External CoT를 혼합한 모델도 base를 안정적으로 넘지 못했다. 외부 데이터의 풀이 문체와 난이도 분포가 대회 데이터와 달랐고, 추가 데이터가 항상 target distribution의 성능 개선으로 이어지지는 않았다.</p>
+              <p>따라서 최종 greedy solver는 학습 adapter가 아닌 출력 계약을 적용한 base model로 유지했다.</p>
+              <h3 id="5-5-self-consistency-결과">5.5. Self-Consistency 결과</h3>
+              <p><strong>Table 5. 생성 수에 따른 고정 Majority Voting 결과</strong></p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>생성 수</th><th>합집합 Accuracy</th><th>해석</th></tr></thead>
+                  <tbody>
+                    <tr><td>k=4</td><td>64.68%</td><td>적은 비용으로 greedy 변동성 완화</td></tr>
+                    <tr><td>k=8</td><td>67.22%</td><td>가장 큰 추가 상승 구간</td></tr>
+                    <tr><td>k=16</td><td>68.45%</td><td>개선 폭 감소 시작</td></tr>
+                    <tr><td>k=32</td><td><strong>69.31%</strong></td><td>최종 기준 경로</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p><code>k=32</code>의 split별 결과는 다음과 같다.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>평가 집합</th><th>Majority@32</th></tr></thead>
+                  <tbody>
+                    <tr><td>Random holdout</td><td>74.28%</td></tr>
+                    <tr><td>Template holdout</td><td>73.98%</td></tr>
+                    <tr><td>Hard diagnostic</td><td>39.64%</td></tr>
+                    <tr><td>Format diagnostic</td><td>50.39%</td></tr>
+                    <tr><td>중복 제거 합집합</td><td>69.31%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>RFT R1 adapter에 같은 Self-Consistency 조건을 적용한 T8-1은 합집합 69.84%를 기록했다. 자기 greedy 성능보다 6.74%p 높았지만 기존 base majority@32 대비 개선은 0.54%p였고, p-value는 0.228이었다. 따라서 RFT adapter 대신 기존 base 경로를 유지했다.</p>
+              <h3 id="5-6-vote-filter와-96-sample-voting">5.6. Vote Filter와 96-Sample Voting</h3>
+              <p>T8-3 vote filter는 고정된 32개 후보에서 품질이 낮은 표를 제외해 70.78%를 기록했다.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>방법</th><th>합집합 Accuracy</th><th>T8 대비 변화</th><th>판정</th></tr></thead>
+                  <tbody>
+                    <tr><td>Raw majority@32</td><td>69.31%</td><td>기준</td><td>유지</td></tr>
+                    <tr><td>Vote filter@32</td><td>70.78%</td><td>+1.47%p</td><td>HOLD</td></tr>
+                    <tr><td>Flat filtered majority@96</td><td>71.18%</td><td>+1.87%p</td><td>탐색적</td></tr>
+                    <tr><td>Arm-normalized voting@96</td><td><strong>71.29%</strong></td><td>+1.98%p</td><td>탐색적</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Vote filter는 69문항을 새롭게 정답으로 바꾸고 기존 정답 14문항을 오답으로 바꾸어 순 55문항을 개선했다. Exact McNemar test에서는 유의했지만, 사전에 설정한 최소 개선 폭 <code>+1.5%p</code>보다 0.03%p 부족했기 때문에 자동 채택하지 않았다.</p>
+              <p>Arm-normalized voting@96은 T8 기준으로는 1.98%p 높았지만, 같은 96개 후보를 사용하는 flat voting보다 개선 폭이 0.11%p에 불과했다. Flat 방식과 비교한 p-value는 0.557이었으므로 arm normalization 자체의 효과는 확인되지 않았다.</p>
+              <p>Split별 arm-normalized 결과는 다음과 같다.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>평가 집합</th><th>Accuracy</th></tr></thead>
+                  <tbody>
+                    <tr><td>Random holdout</td><td>76.18%</td></tr>
+                    <tr><td>Template holdout</td><td>75.63%</td></tr>
+                    <tr><td>Hard diagnostic</td><td>42.18%</td></tr>
+                    <tr><td>Format diagnostic</td><td>54.69%</td></tr>
+                    <tr><td>중복 제거 합집합</td><td>71.29%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>여러 prompt와 adapter가 서로 다른 오류를 낼 가능성은 확인했지만, 동일 holdout을 반복 분석한 탐색적 결과다. 공식 최종 성능으로 보지 않고 fresh validation이 필요한 후보로 기록했다.</p>
+              <h3 id="5-7-pass-32와-선택-실패-분석">5.7. Pass@32와 선택 실패 분석</h3>
+              <p>Majority@32 정확도는 69.31%였지만 32개 후보 중 정답이 하나 이상 존재한 pass@32는 84.40%였다. 두 지표의 차이는 15.09%p였다.</p>
+              <p>3,737문항을 분해하면 다음과 같다.</p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>결과 유형</th><th>문항 수</th></tr></thead>
+                  <tbody>
+                    <tr><td>Majority 정답</td><td>2,590</td></tr>
+                    <tr><td>정답 후보가 있지만 Majority 오답</td><td>564</td></tr>
+                    <tr><td>32개 후보에 정답이 없음</td><td>583</td></tr>
+                    <tr><td>전체</td><td>3,737</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>현재 오답은 총 1,147문항이며, 이 가운데 564문항(49.17%)에는 정답 후보가 이미 존재했다. 이론적으로 완벽한 selector가 있다면 새 풀이를 생성하지 않고도 회수할 수 있는 구간이다.</p>
+              <p>그러나 564개 선택 실패 중 378개는 정답 후보의 지지 표가 1~4개뿐이었다. 또한 231개는 정답이 우세한 오답보다 9표 이상 뒤처졌다. 단순한 tie-break나 약한 confidence weighting만으로는 회수하기 어려운 사례가 많았다.</p>
+              <h3 id="5-8-genselect-결과">5.8. GenSelect 결과</h3>
+              <p>GenSelect는 후보 32개 전체를 사용하는 조건과 총 생성 예산을 32회로 맞춘 조건에서 모두 비교했다.</p>
+              <p><strong>Table 6. GenSelect 비교</strong></p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>조건</th><th>방법</th><th>Accuracy</th></tr></thead>
+                  <tbody>
+                    <tr><td>Full-32</td><td>Majority@32</td><td><strong>69.31%</strong></td></tr>
+                    <tr><td>Full-32</td><td>Few-shot GenSelect</td><td>65.40%</td></tr>
+                    <tr><td>Full-32</td><td>LoRA GenSelect</td><td>55.90%</td></tr>
+                    <tr><td>Equal budget</td><td>Majority@28</td><td><strong>69.20%</strong></td></tr>
+                    <tr><td>Equal budget</td><td>28 solve + 4 few-shot select</td><td>65.80%</td></tr>
+                    <tr><td>Equal budget</td><td>28 solve + 4 LoRA select</td><td>55.98%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Few-shot selector와 LoRA selector 모두 다수결보다 낮았다. Selector 호출을 추가해 성능이 낮아졌다는 해석을 배제하려고 총 생성 횟수를 32회로 맞춘 equal-budget 비교도 수행했지만 결과는 같았다.</p>
+              <p>실패 원인은 다음과 같이 분석했다.</p>
+              <ul>
+                <li>3B 모델이 여러 긴 풀이의 미세한 계산 오류를 비교하기 어려웠다.</li>
+                <li>후보 요약 과정에서 중간 계산의 중요한 정보가 손실될 수 있었다.</li>
+                <li>LoRA selector가 후보 위치와 표현 방식에 과적합되는 경향을 보였다.</li>
+                <li>정답이 1~4개뿐인 문제에서는 다수의 그럴듯한 오답이 selector 판단을 압도했다.</li>
+              </ul>
+              <p>이에 따라 GenSelect는 최종 추론 경로에서 제거했다.</p>
+              <h3 id="5-9-orm-결과">5.9. ORM 결과</h3>
+              <p>Pointwise ORM은 6,034개의 고유 문항과 30,912개의 정답·오답 풀이 쌍으로 학습했다. 기존 T8 holdout과 모델 선택에 사용한 문항을 모두 제외한 fresh validation 1,000문항에서 평가했다.</p>
+              <p><strong>Table 7. Fresh Validation ORM 결과</strong></p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>선택 방법</th><th>Accuracy</th><th>Raw majority 대비</th></tr></thead>
+                  <tbody>
+                    <tr><td>Raw majority@32</td><td>87.4%</td><td>기준</td></tr>
+                    <tr><td>T8-3 vote filter</td><td>87.4%</td><td>0.0%p</td></tr>
+                    <tr><td>ORM argmax</td><td>82.8%</td><td>-4.6%p</td></tr>
+                    <tr><td>ORM weighted majority</td><td><strong>87.6%</strong></td><td>+0.2%p</td></tr>
+                    <tr><td>Oracle pass@32</td><td>96.9%</td><td>+9.5%p 상한</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>ORM weighted majority는 8문항을 새로 맞혔지만 기존 정답 6문항을 틀려 순이득은 2문항이었다. 개선 폭은 0.2%p였고 통계 결과는 다음과 같았다.</p>
+              <pre class="report-code"><code class="language-text">Bootstrap 95% CI: -0.5 ~ +0.9%p
+McNemar p-value: 0.791
+5-fold delta: +0.5, -0.5, +0.5, -0.5, +1.0%p</code></pre>
+              <p>후보 정답 여부를 구별하는 전체 ROC-AUC는 0.812였지만 같은 질문 안에서 후보를 비교한 macro AUC는 0.740이었다. 서로 다른 문제의 후보를 전체적으로 분류하는 능력은 있었지만 실제 답 선택에 필요한 question-local ranking 능력은 더 약했다.</p>
+              <p>ORM argmax는 82.8%로 다수결보다 낮았다. 최고 score 하나에 의존하는 것보다 여러 독립 풀이가 같은 답을 지지한다는 정보가 더 안정적이었다.</p>
+              <p>따라서 ORM weighted voting은 <code>HOLD</code>로 판정하고 최종 제출 경로에 포함하지 않았다.</p>
+              <h3 id="5-10-최종-실험-판단">5.10. 최종 실험 판단</h3>
+              <p><strong>Table 8. 기법별 최종 판단</strong></p>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>기법</th><th>핵심 결과</th><th>최종 판단</th></tr></thead>
+                  <tbody>
+                    <tr><td>출력 계약</td><td>Random +3.79%p, invalid -14.42%p</td><td><strong>채택</strong></td></tr>
+                    <tr><td>RFT R1 QLoRA</td><td>Random +0.86%p, hard/format 하락</td><td>미채택</td></tr>
+                    <tr><td>Self-Consistency k=32</td><td>합집합 69.31%</td><td><strong>채택</strong></td></tr>
+                    <tr><td>Vote filter</td><td>+1.47%p, 기준에 0.03%p 미달</td><td>HOLD</td></tr>
+                    <tr><td>Multi-view 96-sample</td><td>71.29%, 사후 탐색</td><td>Fresh 검증 필요</td></tr>
+                    <tr><td>GenSelect</td><td>Majority보다 -3.91~-13.41%p</td><td><strong>기각</strong></td></tr>
+                    <tr><td>Pointwise ORM</td><td>Fresh validation +0.2%p, p=0.791</td><td>HOLD</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>가장 안정적으로 확인된 개선은 출력 계약과 Self-Consistency였다. RFT, GenSelect, ORM은 직접 구현하고 평가했지만 일부 지표가 올랐다는 이유만으로 최종 경로를 교체하지 않았다. 모델 학습과 후보 선택을 복잡하게 만드는 것보다 실제 오류 원인을 분리하고 검증된 개선만 유지하는 편이 더 중요했다.</p>
+            </section>
+            <section class="report-section" id="6-결론-및-향후-과제">
+              <h2>6. 결론 및 향후 과제</h2>
+              <p>본 프로젝트에서는 고정된 3B 범용 모델을 수학 추론 과제에 적용하고, 데이터 구축부터 학습, 추론, 후보 선택, 평가와 제출 검증까지의 전체 파이프라인을 구현했다.</p>
+              <p>가장 큰 단일 개선은 새로운 모델을 학습해서 얻은 것이 아니었다. 답 추출과 토큰 상한을 보완하는 것만으로 random holdout 정확도가 64.20%에서 67.99%로 상승했고, invalid output은 15.03%에서 0.61%로 감소했다. 모델 성능을 논하기 전에 평가 계약과 출력 손실을 먼저 점검해야 한다는 뜻이다.</p>
+              <p>Self-Consistency는 작은 모델의 불안정성을 완화하는 가장 효과적인 방법이었다. 문제당 32개의 풀이를 생성한 majority voting은 고정 합집합에서 69.31%를 기록했고, 세 개의 생성 arm을 결합한 탐색적 결과는 71.29%까지 상승했다.</p>
+              <p>복잡한 방법이 모두 성능을 높이지는 않았다. RFT는 40,645개의 정답 풀이를 수확했지만 진단 집합의 성능 하락 때문에 채택하지 않았다. GenSelect는 다수결보다 낮았고, pointwise ORM은 fresh validation에서 0.2%p 개선에 그쳤다. 이런 실패까지 동일한 평가 체계에서 비교하고 공개한 점도 프로젝트의 중요한 결과다.</p>
+              <p>향후에는 다음 과제를 진행할 수 있다.</p>
+              <ul>
+                <li>후보를 독립 점수화하는 pointwise 방식 대신 같은 질문의 후보를 직접 비교하는 pairwise/listwise objective를 적용한다.</li>
+                <li>전체 candidate ROC-AUC보다 question-local macro AUC를 주요 선택 지표로 사용한다.</li>
+                <li>새로운 fresh validation에서 class prior와 calibration을 사전에 고정한다.</li>
+                <li>RFT 데이터를 쉬운 문제 중심으로 수확하지 않고 긴 문제, 기하, 정수론, 조합론에 집중한다.</li>
+                <li>후보 생성 실패와 후보 선택 실패를 별도 모델과 데이터로 개선한다.</li>
+              </ul>
+            </section>
+            <section class="report-section" id="references">
+              <h2>References</h2>
+              <ol class="references-list">
+                <li>Qwen Team, <a href="https://huggingface.co/Qwen/Qwen2.5-3B-Instruct">Qwen/Qwen2.5-3B-Instruct Model Card</a>.</li>
+                <li>Yang et al., <a href="https://arxiv.org/abs/2409.12122">Qwen2.5-Math Technical Report: Toward Mathematical Expert Model via Self-Improvement</a>, 2024.</li>
+                <li>Yuan et al., <a href="https://arxiv.org/abs/2308.01825">Scaling Relationship on Learning Mathematical Reasoning with Large Language Models</a>, 2023.</li>
+                <li>Wang et al., <a href="https://arxiv.org/abs/2203.11171">Self-Consistency Improves Chain of Thought Reasoning in Language Models</a>, ICLR 2023.</li>
+                <li>Hu et al., <a href="https://arxiv.org/abs/2106.09685">LoRA: Low-Rank Adaptation of Large Language Models</a>, ICLR 2022.</li>
+                <li>NVIDIA et al., <a href="https://arxiv.org/abs/2504.16891">AIMO-2 Winning Solution: Building State-of-the-Art Mathematical Reasoning Models with OpenMathReasoning Dataset</a>, 2025.</li>
+                <li>CMU-MATH Team, <a href="https://blog.ml.cmu.edu/2024/07/29/cmu-math-teams-innovative-approach-secures-2nd-place-at-the-aimo-prize/">CMU-MATH Team’s Innovative Approach Secures 2nd Place at the AIMO Prize</a>, 2024.</li>
+              </ol>
+            </section>
+            <div class="report-links">
+              <a class="button secondary" href="index.html">Back to all projects</a>
+              <a class="button secondary" href="../index.html#projects">Back to featured</a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>
