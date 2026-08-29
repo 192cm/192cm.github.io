@@ -46,17 +46,6 @@
             <a href="#references">References</a>
           </aside>
           <div class="report-content">
-            <section class="report-section" id="주요-기여">
-              <h2>주요 기여</h2>
-              <ul>
-                <li>17,000개 원본 문항을 검증하고 재현 가능한 canonical dataset과 holdout을 구축했다.</li>
-                <li>계산을 수행하지 않는 문자열 기반 정수 답 추출기와 출력 계약을 설계했다.</li>
-                <li>Hugging Face와 vLLM을 지원하며 중단 후 재개할 수 있는 생성·평가 파이프라인을 구현했다.</li>
-                <li>RFT, QLoRA SFT, Self-Consistency, GenSelect, ORM을 동일한 평가 조건에서 비교했다.</li>
-                <li>Config, manifest, raw generation, 해시를 보존해 모든 실험의 감사 경로를 구축했다.</li>
-                <li>성능 기준을 통과하지 못한 모델과 선택기를 자동으로 기각하고 기존 경로를 보존했다.</li>
-              </ul>
-            </section>
             <section class="report-section" id="1-서론">
               <h2>1. 서론 (Introduction)</h2>
               <p>대규모 언어 모델은 수학 문제에 대한 풀이를 자연어로 생성할 수 있지만, 생성된 풀이가 항상 정확한 최종 답으로 이어지는 것은 아니다. 특히 작은 범용 모델은 긴 추론 중 계산을 잘못하거나, 올바른 답을 구하고도 지정된 출력 형식을 지키지 못하거나, 토큰 상한에 도달해 최종 답을 출력하지 못하는 문제가 발생한다.</p>
