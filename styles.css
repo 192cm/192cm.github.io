@@ -828,6 +828,21 @@ h1 {
   color: #d70015;
 }
 
+.parameter-table th:nth-child(1),
+.parameter-table td:nth-child(1) {
+  width: 24%;
+}
+
+.parameter-table th:nth-child(2),
+.parameter-table td:nth-child(2) {
+  width: 16%;
+}
+
+.parameter-table th:nth-child(3),
+.parameter-table td:nth-child(3) {
+  width: 60%;
+}
+
 .report-section p {
   margin-bottom: 16px;
 }
